@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>culture-escrow-pg17 demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 760px; margin: 24px auto; padding: 0 12px; }
+    label { display:block; margin-top:10px; }
+    input { width:100%; padding:8px; }
+    button { margin-top:14px; padding:10px 14px; }
+    pre { background:#f6f6f6; padding:10px; border-radius:6px; overflow:auto; }
+  </style>
+</head>
+<body>
+  <h1>PG17 Fill Demo</h1>
+  <form id="f">
+    <label>Source PDF <input type="file" name="source_pdf" accept="application/pdf" required></label>
+    <label>deposit_amount <input name="deposit_amount" placeholder="266,400.00"></label>
+    <label>seller_agent_name <input name="seller_agent_name" placeholder="Carol Chua"></label>
+    <label>escrow_number <input name="escrow_number" placeholder="024899-01"></label>
+    <label>acceptance_date <input name="acceptance_date" placeholder="03/20/2026"></label>
+    <label>second_date <input name="second_date" placeholder="03/20/2026"></label>
+    <button type="submit">Run Fill</button>
+  </form>
+  <p id="msg"></p>
+  <pre id="out"></pre>
+
+  <script>
+    const f = document.getElementById('f');
+    const msg = document.getElementById('msg');
+    const out = document.getElementById('out');
+    f.onsubmit = async (e) => {
+      e.preventDefault();
+      msg.textContent = '处理中...';
+      out.textContent = '';
+      const fd = new FormData(f);
+      const r = await fetch('http://127.0.0.1:8787/v1/pg17/fill', { method: 'POST', body: fd });
+      const j = await r.json();
+      out.textContent = JSON.stringify(j, null, 2);
+      if (!r.ok) {
+        msg.textContent = '失败';
+        return;
+      }
+      msg.innerHTML = `完成：<a href="http://127.0.0.1:8787${j.output_file}" target="_blank">下载 done.pdf</a>`;
+    };
+  </script>
+</body>
+</html>
