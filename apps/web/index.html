@@ -23,16 +23,18 @@
     <label>second_date <input name="second_date" placeholder="03/20/2026"></label>
     <button type="submit">Run Fill</button>
   </form>
-  <p id="msg"></p>
+  <p id="msg"></p><p id="hint" style="color:#666"></p>
   <pre id="out"></pre>
 
   <script>
     const f = document.getElementById('f');
     const msg = document.getElementById('msg');
     const out = document.getElementById('out');
+    const hint = document.getElementById('hint');
     f.onsubmit = async (e) => {
       e.preventDefault();
       msg.textContent = '处理中...';
+      hint.textContent='';
       out.textContent = '';
       const fd = new FormData(f);
       const r = await fetch('http://127.0.0.1:8787/v1/pg17/fill', { method: 'POST', body: fd });
@@ -40,9 +42,11 @@
       out.textContent = JSON.stringify(j, null, 2);
       if (!r.ok) {
         msg.textContent = '失败';
+        hint.textContent = (j && j.detail && (j.detail.hint || j.detail)) || '请检查参数与PDF模板';
         return;
       }
       msg.innerHTML = `完成：<a href="http://127.0.0.1:8787${j.output_file}" target="_blank">下载 done.pdf</a>`;
+      hint.textContent='若字段缺失，请检查 summary 里的 missing_inputs。';
     };
   </script>
 </body>

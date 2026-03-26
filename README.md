@@ -14,3 +14,6 @@ cd /Users/wu/workspace/culture-escrow-pg17
 ./scripts/run_demo.sh
 ```
 Then open: `http://127.0.0.1:8788`
+
+## Stable Local Run
+See: `docs/09-运维/LOCAL_DEMO_RUNBOOK.md`
