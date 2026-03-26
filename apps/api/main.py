@@ -1,20 +1,36 @@
 from __future__ import annotations
 
 import os
+import re
 import tempfile
 import uuid
 from pathlib import Path
 from typing import Optional
 
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
 from pg17_engine import fill_page17
 
 app = FastAPI(title="culture-escrow-pg17 API", version="0.1.0")
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 OUTPUT_DIR = Path(tempfile.gettempdir()) / "culture-escrow-pg17"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+
+def _valid_date(v: str) -> bool:
+    if not v:
+        return True
+    return bool(re.fullmatch(r"\d{2}/\d{2}/\d{4}", v))
 
 
 @app.get("/health")
@@ -34,6 +50,13 @@ async def pg17_fill(
     if not source_pdf.filename or not source_pdf.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail="source_pdf must be a PDF")
 
+    for k, v in {
+        "acceptance_date": (acceptance_date or "").strip(),
+        "second_date": (second_date or "").strip(),
+    }.items():
+        if not _valid_date(v):
+            raise HTTPException(status_code=400, detail=f"{k} must be MM/DD/YYYY")
+
     job_id = str(uuid.uuid4())
     src_path = OUTPUT_DIR / f"{job_id}-source.pdf"
     out_path = OUTPUT_DIR / f"{job_id}-done.pdf"
@@ -52,7 +75,11 @@ async def pg17_fill(
             second_date=(second_date or "").strip(),
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"fill failed: {e}")
+        raise HTTPException(status_code=500, detail={
+            "message": "fill failed",
+            "error": str(e),
+            "hint": "Check PDF layout and required anchors on page 17.",
+        })
 
     return JSONResponse(
         {
