@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 import os
 import re
@@ -224,6 +225,20 @@ async def pg17_fill(
             engine_ms,
             str(e),
         )
+        _audit_log({
+            "event": "fill_failed",
+            "request_id": request_id,
+            "job_id": job_id,
+            "ts": time.time(),
+            "actor": (x_actor or "unknown")[:64],
+            "inputs": {
+                "escrow_number": _mask_value(escrow_number or ""),
+                "acceptance_date": acceptance_date or "",
+                "second_date": second_date or "",
+            },
+            "error_code": "PG17_500_ENGINE_FAILED",
+            "error": str(e)[:500],
+        })
         raise HTTPException(
             status_code=500,
             detail={
@@ -247,6 +262,29 @@ async def pg17_fill(
         engine_ms,
         export_ms,
     )
+
+    _audit_log({
+        "event": "fill_success",
+        "request_id": request_id,
+        "job_id": job_id,
+        "ts": time.time(),
+        "actor": (x_actor or "unknown")[:64],
+        "inputs": {
+            "escrow_number": _mask_value(escrow_number or ""),
+            "acceptance_date": acceptance_date or "",
+            "second_date": second_date or "",
+        },
+        "timings_ms": {
+            "upload": round(upload_ms, 2),
+            "engine": round(engine_ms, 2),
+            "export": round(export_ms, 2),
+        },
+        "result": {
+            "missing_inputs": summary.get("missing_inputs", []),
+            "filled_count": len(summary.get("filled_fields", [])),
+            "left_blank_count": len(summary.get("left_blank", [])),
+        },
+    })
 
     return JSONResponse(
         {
