@@ -15,3 +15,9 @@
 - [ ] 任务队列与重试
 - [ ] 审计与版本化
 - [ ] 权限分级
+
+
+## Phase A-2（可观测性）
+- [x] API返回 upload/engine/export 三段耗时（timings_ms）
+- [x] 日志记录 request_id + job_id + 三段耗时
+- [ ] 后续接入监控面板
