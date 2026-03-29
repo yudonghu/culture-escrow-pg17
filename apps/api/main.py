@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import re
 import tempfile
 import time
@@ -8,7 +9,7 @@ import uuid
 from pathlib import Path
 from typing import Optional
 
-from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 
@@ -27,6 +28,8 @@ app.add_middleware(
 OUTPUT_DIR = Path(tempfile.gettempdir()) / "culture-escrow-pg17"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+API_TOKEN = os.getenv("PG17_API_TOKEN", "")
+
 logger = logging.getLogger("pg17.api")
 if not logger.handlers:
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
@@ -41,6 +44,27 @@ def _valid_date(v: str) -> bool:
 def _new_request_id() -> str:
     return f"req_{uuid.uuid4().hex[:12]}"
 
+
+
+
+def _check_auth(request_id: str, x_api_token: Optional[str]) -> None:
+    """Minimal auth gate for Phase B-1.
+
+    - If PG17_API_TOKEN is empty: auth disabled (demo/dev mode).
+    - If PG17_API_TOKEN is set: require header x-api-token exact match.
+    """
+    if not API_TOKEN:
+        return
+    if not x_api_token or x_api_token != API_TOKEN:
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "error_code": "PG17_401_UNAUTHORIZED",
+                "message": "unauthorized",
+                "hint": "provide valid x-api-token header",
+                "extra": {"request_id": request_id},
+            },
+        )
 
 def _error_response(
     *,
@@ -126,6 +150,7 @@ def health(request: Request):
         "ok": True,
         "request_id": request.state.request_id,
         "service": "culture-escrow-pg17-api",
+        "auth_enabled": bool(API_TOKEN),
     }
 
 
@@ -138,8 +163,10 @@ async def pg17_fill(
     escrow_number: Optional[str] = Form(default=""),
     acceptance_date: Optional[str] = Form(default=""),
     second_date: Optional[str] = Form(default=""),
+    x_api_token: Optional[str] = Header(default=None),
 ):
     request_id = request.state.request_id
+    _check_auth(request_id, x_api_token)
 
     if not source_pdf.filename or not source_pdf.filename.lower().endswith(".pdf"):
         raise HTTPException(
@@ -167,6 +194,8 @@ async def pg17_fill(
 
     job_id = str(uuid.uuid4())
     src_path = OUTPUT_DIR / f"{job_id}-source.pdf"
+    request_id = request.state.request_id
+    _check_auth(request_id, x_api_token)
     out_path = OUTPUT_DIR / f"{job_id}-done.pdf"
 
     t0 = time.perf_counter()
@@ -236,7 +265,9 @@ async def pg17_fill(
 
 
 @app.get("/v1/pg17/output/{job_id}")
-def download_output(job_id: str, request: Request):
+def download_output(job_id: str, request: Request, x_api_token: Optional[str] = Header(default=None)):
+    request_id = request.state.request_id
+    _check_auth(request_id, x_api_token)
     out_path = OUTPUT_DIR / f"{job_id}-done.pdf"
     if not out_path.exists():
         raise HTTPException(

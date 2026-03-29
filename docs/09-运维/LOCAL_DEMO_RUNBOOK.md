@@ -48,3 +48,17 @@ python3 -m http.server 8788 --directory apps/web
 ## Troubleshooting
 - If browser keeps "处理中...": verify API is running and CORS enabled.
 - If `pydantic-core` build fails: make sure using Python 3.11, not 3.14.
+
+## 6. Optional auth (Phase B-1)
+If you want to enable minimal auth in local/staging:
+
+```bash
+export PG17_API_TOKEN="your-local-token"
+```
+
+Then include request header in API calls:
+- `x-api-token: your-local-token`
+
+Notes:
+- If `PG17_API_TOKEN` is empty, auth is disabled (demo mode).
+- `GET /health` remains public to support health checks.
