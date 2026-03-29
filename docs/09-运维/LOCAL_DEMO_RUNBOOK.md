@@ -62,3 +62,17 @@ Then include request header in API calls:
 Notes:
 - If `PG17_API_TOKEN` is empty, auth is disabled (demo mode).
 - `GET /health` remains public to support health checks.
+
+## 7. Retention cleanup (Phase B-3)
+Set retention window:
+
+```bash
+export PG17_RETENTION_DAYS=7
+```
+
+Trigger cleanup manually:
+
+```bash
+curl -X POST http://127.0.0.1:8787/v1/admin/cleanup \
+  -H "x-api-token: $PG17_API_TOKEN"
+```
