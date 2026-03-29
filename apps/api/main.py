@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta, timezone
+import hashlib
 import logging
 import os
 import re
@@ -217,6 +218,48 @@ async def pg17_fill(
     src_path.write_bytes(content)
     upload_ms = (time.perf_counter() - t0) * 1000
 
+    payload_fields = {
+        "deposit_amount": (deposit_amount or "").strip(),
+        "seller_agent_name": (seller_agent_name or "").strip(),
+        "escrow_number": (escrow_number or "").strip(),
+        "acceptance_date": (acceptance_date or "").strip(),
+        "second_date": (second_date or "").strip(),
+    }
+    payload_hash = _build_payload_hash(content, payload_fields)
+
+    idem_key = (x_idempotency_key or "").strip()
+    if idem_key:
+        store = _cleanup_idempotency_store(_load_idempotency_store())
+        hit = store.get(idem_key)
+        if hit and hit.get("payload_hash") == payload_hash and hit.get("status") == "success":
+            _audit_log({
+                "event": "idempotency_hit",
+                "request_id": request_id,
+                "job_id": hit.get("job_id"),
+                "ts": time.time(),
+                "key": idem_key[:64],
+            })
+            return JSONResponse(
+                {
+                    "ok": True,
+                    "request_id": request_id,
+                    "job_id": hit.get("job_id"),
+                    "output_file": hit.get("output_file"),
+                    "timings_ms": hit.get("timings_ms", {}),
+                    "summary": hit.get("summary", {}),
+                    "idempotency": {"hit": True, "key": idem_key},
+                }
+            )
+        elif hit and hit.get("payload_hash") != payload_hash:
+            raise HTTPException(
+                status_code=409,
+                detail={
+                    "error_code": "PG17_409_IDEMPOTENCY_PAYLOAD_MISMATCH",
+                    "message": "idempotency key reused with different payload",
+                    "hint": "use a new x-idempotency-key for different input",
+                },
+            )
+
     t1 = time.perf_counter()
     try:
         summary = fill_page17(
@@ -276,6 +319,12 @@ async def pg17_fill(
         export_ms,
     )
 
+    timings = {
+        "upload": round(upload_ms, 2),
+        "engine": round(engine_ms, 2),
+        "export": round(export_ms, 2),
+    }
+
     _audit_log({
         "event": "fill_success",
         "request_id": request_id,
@@ -287,11 +336,7 @@ async def pg17_fill(
             "acceptance_date": acceptance_date or "",
             "second_date": second_date or "",
         },
-        "timings_ms": {
-            "upload": round(upload_ms, 2),
-            "engine": round(engine_ms, 2),
-            "export": round(export_ms, 2),
-        },
+        "timings_ms": timings,
         "result": {
             "missing_inputs": summary.get("missing_inputs", []),
             "filled_count": len(summary.get("filled_fields", [])),
@@ -299,18 +344,29 @@ async def pg17_fill(
         },
     })
 
+    idem_key = (x_idempotency_key or "").strip()
+    if idem_key:
+        store = _cleanup_idempotency_store(_load_idempotency_store())
+        store[idem_key] = {
+            "ts": time.time(),
+            "status": "success",
+            "payload_hash": payload_hash,
+            "job_id": job_id,
+            "output_file": f"/v1/pg17/output/{job_id}",
+            "timings_ms": timings,
+            "summary": summary,
+        }
+        _save_idempotency_store(store)
+
     return JSONResponse(
         {
             "ok": True,
             "request_id": request_id,
             "job_id": job_id,
             "output_file": f"/v1/pg17/output/{job_id}",
-            "timings_ms": {
-                "upload": round(upload_ms, 2),
-                "engine": round(engine_ms, 2),
-                "export": round(export_ms, 2),
-            },
+            "timings_ms": timings,
             "summary": summary,
+            "idempotency": {"hit": False, "key": (x_idempotency_key or "").strip() or None},
         }
     )
 
