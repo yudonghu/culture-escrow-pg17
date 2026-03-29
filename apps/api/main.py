@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timedelta, timezone
 import logging
 import os
 import re
@@ -152,6 +153,18 @@ def health(request: Request):
         "request_id": request.state.request_id,
         "service": "culture-escrow-pg17-api",
         "auth_enabled": bool(API_TOKEN),
+    }
+
+
+@app.post("/v1/admin/cleanup")
+def admin_cleanup(request: Request, x_api_token: Optional[str] = Header(default=None)):
+    request_id = request.state.request_id
+    _check_auth(request_id, x_api_token)
+    event = _cleanup_old_outputs(RETENTION_DAYS)
+    return {
+        "ok": True,
+        "request_id": request_id,
+        "cleanup": event,
     }
 
 
