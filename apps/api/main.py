@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 import re
 import tempfile
 import time
@@ -25,6 +26,10 @@ app.add_middleware(
 
 OUTPUT_DIR = Path(tempfile.gettempdir()) / "culture-escrow-pg17"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+logger = logging.getLogger("pg17.api")
+if not logger.handlers:
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 
 def _valid_date(v: str) -> bool:
@@ -164,9 +169,12 @@ async def pg17_fill(
     src_path = OUTPUT_DIR / f"{job_id}-source.pdf"
     out_path = OUTPUT_DIR / f"{job_id}-done.pdf"
 
+    t0 = time.perf_counter()
     content = await source_pdf.read()
     src_path.write_bytes(content)
+    upload_ms = (time.perf_counter() - t0) * 1000
 
+    t1 = time.perf_counter()
     try:
         summary = fill_page17(
             source_pdf=str(src_path),
@@ -178,6 +186,15 @@ async def pg17_fill(
             second_date=(second_date or "").strip(),
         )
     except Exception as e:
+        engine_ms = (time.perf_counter() - t1) * 1000
+        logger.error(
+            "pg17_fill_failed request_id=%s job_id=%s upload_ms=%.2f engine_ms=%.2f error=%s",
+            request_id,
+            job_id,
+            upload_ms,
+            engine_ms,
+            str(e),
+        )
         raise HTTPException(
             status_code=500,
             detail={
@@ -188,12 +205,31 @@ async def pg17_fill(
             },
         )
 
+    engine_ms = (time.perf_counter() - t1) * 1000
+    t2 = time.perf_counter()
+    # export currently just returns output link; keep slot for future storage/export hooks
+    export_ms = (time.perf_counter() - t2) * 1000
+
+    logger.info(
+        "pg17_fill_ok request_id=%s job_id=%s upload_ms=%.2f engine_ms=%.2f export_ms=%.2f",
+        request_id,
+        job_id,
+        upload_ms,
+        engine_ms,
+        export_ms,
+    )
+
     return JSONResponse(
         {
             "ok": True,
             "request_id": request_id,
             "job_id": job_id,
             "output_file": f"/v1/pg17/output/{job_id}",
+            "timings_ms": {
+                "upload": round(upload_ms, 2),
+                "engine": round(engine_ms, 2),
+                "export": round(export_ms, 2),
+            },
             "summary": summary,
         }
     )
