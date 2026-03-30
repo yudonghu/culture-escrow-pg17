@@ -28,3 +28,7 @@ Install deployable engine dependencies with:
 ```bash
 ./deploy/scripts/install_engine_deps.sh
 ```
+
+## EC2 Auto Deploy
+- Workflow: `.github/workflows/deploy-ec2.yml`
+- Remote script: `deploy/scripts/deploy_prod.sh`
