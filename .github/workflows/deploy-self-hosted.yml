@@ -1,0 +1,20 @@
+name: Deploy to EC2 (Self-Hosted Runner)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux, x64, pg17-prod]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy on runner host
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEPLOY_PATH="${DEPLOY_PATH:-/opt/services/culture-escrow-pg17}"
+          bash "$DEPLOY_PATH/deploy/scripts/deploy_prod.sh" "$DEPLOY_PATH"
