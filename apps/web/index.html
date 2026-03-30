@@ -1,52 +1,135 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>culture-escrow-pg17 demo</title>
+  <title>Culture Escrow PG17</title>
   <style>
-    body { font-family: Arial, sans-serif; max-width: 760px; margin: 24px auto; padding: 0 12px; }
-    label { display:block; margin-top:10px; }
-    input { width:100%; padding:8px; }
-    button { margin-top:14px; padding:10px 14px; }
-    pre { background:#f6f6f6; padding:10px; border-radius:6px; overflow:auto; }
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f6f4ef;
+      color: #18212b;
+    }
+    .hero {
+      background: linear-gradient(135deg, #142334 0%, #28435e 100%);
+      color: white;
+      padding: 48px 24px;
+    }
+    .hero-inner, .container {
+      max-width: 960px;
+      margin: 0 auto;
+    }
+    .hero h1 { margin: 0 0 10px; font-size: 40px; }
+    .hero p { max-width: 680px; line-height: 1.8; color: rgba(255,255,255,0.88); }
+    .container { padding: 28px 24px 40px; }
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 16px 30px rgba(20, 35, 52, 0.08);
+      border: 1px solid #e6dfd2;
+      margin-bottom: 22px;
+    }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+    label { display:block; margin-top:12px; font-weight: 600; }
+    input { width:100%; padding:10px; margin-top:6px; border:1px solid #d6d6d6; border-radius: 10px; }
+    button {
+      margin-top:18px; padding:12px 18px; border:none; border-radius:999px;
+      background:#b08a4a; color:white; font-weight:700; cursor:pointer;
+    }
+    pre { background:#f7f7f7; padding:14px; border-radius:10px; overflow:auto; }
+    .muted { color:#5a6470; }
+    .success a { color:#0b5cab; font-weight:700; }
   </style>
 </head>
 <body>
-  <h1>PG17 Fill Demo</h1>
-  <form id="f">
-    <label>Source PDF <input type="file" name="source_pdf" accept="application/pdf" required></label>
-    <label>deposit_amount <input name="deposit_amount" placeholder="266,400.00"></label>
-    <label>seller_agent_name <input name="seller_agent_name" placeholder="Carol Chua"></label>
-    <label>escrow_number <input name="escrow_number" placeholder="024899-01"></label>
-    <label>acceptance_date <input name="acceptance_date" placeholder="03/20/2026"></label>
-    <label>second_date <input name="second_date" placeholder="03/20/2026"></label>
-    <button type="submit">Run Fill</button>
-  </form>
-  <p id="msg"></p><p id="hint" style="color:#666"></p>
-  <pre id="out"></pre>
+  <section class="hero">
+    <div class="hero-inner">
+      <h1>PG17 Fill Tool</h1>
+      <p>
+        Culture Escrow PG17 is the first production-style tool being connected to the portal experience.
+        Use this page to upload a PDF, submit required escrow fields, and download the completed output.
+      </p>
+    </div>
+  </section>
+
+  <div class="container">
+    <div class="card">
+      <h2>Tool Overview</h2>
+      <p class="muted">
+        This v1 web page is a cleaner front-end wrapper around the pg17 API. It is intended to become
+        the real “Open tool” destination from the portal.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>PG17 Submission</h2>
+      <form id="f">
+        <div class="grid">
+          <div>
+            <label>Source PDF</label>
+            <input type="file" name="source_pdf" accept="application/pdf" required>
+          </div>
+          <div>
+            <label>Deposit Amount</label>
+            <input name="deposit_amount" placeholder="266,400.00">
+          </div>
+          <div>
+            <label>Seller Agent Name</label>
+            <input name="seller_agent_name" placeholder="Carol Chua">
+          </div>
+          <div>
+            <label>Escrow Number</label>
+            <input name="escrow_number" placeholder="024899-01">
+          </div>
+          <div>
+            <label>Acceptance Date</label>
+            <input name="acceptance_date" placeholder="03/20/2026">
+          </div>
+          <div>
+            <label>Second Date</label>
+            <input name="second_date" placeholder="03/20/2026">
+          </div>
+        </div>
+        <button type="submit">Run Fill</button>
+      </form>
+    </div>
+
+    <div class="card">
+      <h2>Status</h2>
+      <p id="msg" class="muted">Waiting for submission.</p>
+      <p id="hint" class="muted"></p>
+      <pre id="out"></pre>
+    </div>
+  </div>
 
   <script>
+    const API_BASE = 'https://api.hydenluc.com';
     const f = document.getElementById('f');
     const msg = document.getElementById('msg');
     const out = document.getElementById('out');
     const hint = document.getElementById('hint');
+
     f.onsubmit = async (e) => {
       e.preventDefault();
-      msg.textContent = '处理中...';
-      hint.textContent='';
+      msg.textContent = 'Processing...';
+      hint.textContent = '';
       out.textContent = '';
+
       const fd = new FormData(f);
-      const r = await fetch('http://127.0.0.1:8787/v1/pg17/fill', { method: 'POST', body: fd });
+      const r = await fetch(`${API_BASE}/v1/pg17/fill`, { method: 'POST', body: fd });
       const j = await r.json();
       out.textContent = JSON.stringify(j, null, 2);
+
       if (!r.ok) {
-        msg.textContent = '失败';
-        hint.textContent = (j && j.detail && (j.detail.hint || j.detail)) || '请检查参数与PDF模板';
+        msg.textContent = 'Failed';
+        hint.textContent = (j && j.detail && (j.detail.hint || j.detail)) || 'Please review the required fields and PDF file.';
         return;
       }
-      msg.innerHTML = `完成：<a href="http://127.0.0.1:8787${j.output_file}" target="_blank">下载 done.pdf</a>`;
-      hint.textContent='若字段缺失，请检查 summary 里的 missing_inputs。';
+
+      msg.innerHTML = `<span class="success">Done: <a href="${API_BASE}${j.output_file}" target="_blank">Download done.pdf</a></span>`;
+      hint.textContent = 'If fields are missing, please check summary.missing_inputs.';
     };
   </script>
 </body>
