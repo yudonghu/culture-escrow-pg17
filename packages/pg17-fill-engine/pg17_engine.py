@@ -7,12 +7,18 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_ENGINE_SCRIPT = ROOT / 'tools' / 'pg17-engine' / 'fill_page17_stub.py'
+DEFAULT_ENGINE_SCRIPT = ROOT / 'tools' / 'pg17-engine' / 'fill_page17_real.py'
+FALLBACK_ENGINE_SCRIPT = ROOT / 'tools' / 'pg17-engine' / 'fill_page17_stub.py'
 DEFAULT_ENGINE_PYTHON = sys.executable
 
 
 def _engine_script() -> Path:
-    return Path(os.getenv('PG17_ENGINE_SCRIPT', str(DEFAULT_ENGINE_SCRIPT))).expanduser().resolve()
+    configured = os.getenv('PG17_ENGINE_SCRIPT')
+    if configured:
+        return Path(configured).expanduser().resolve()
+    if DEFAULT_ENGINE_SCRIPT.exists():
+        return DEFAULT_ENGINE_SCRIPT
+    return FALLBACK_ENGINE_SCRIPT
 
 
 def _engine_python() -> str:
@@ -34,14 +40,11 @@ def fill_page17(
     if not script.exists():
         raise RuntimeError(f'engine script not found: {script}')
 
-    cmd = [
-        python_bin,
-        str(script),
-        '--source',
-        source_pdf,
-        '--output',
-        output_pdf,
-    ]
+    cmd = [python_bin, str(script), '--source', source_pdf]
+
+    # support both repo-deploy real engine and stub engine
+    if script.name == 'fill_page17_stub.py':
+        cmd += ['--output', output_pdf]
     if deposit_amount:
         cmd += ['--deposit-amount', deposit_amount]
     if seller_agent_name:
@@ -62,10 +65,14 @@ def fill_page17(
     if not generated:
         raise RuntimeError('no output_pdf in summary')
 
+    generated_path = Path(generated)
+    if generated_path.resolve() != Path(output_pdf).resolve():
+        Path(output_pdf).write_bytes(generated_path.read_bytes())
+
     return {
         'missing_inputs': summary.get('missing_inputs', []),
         'filled_fields': summary.get('filled_fields', []),
         'left_blank': summary.get('left_blank', []),
-        'engine_mode': summary.get('engine_mode', 'external'),
+        'engine_mode': summary.get('engine_mode', 'real_fill' if script.name == 'fill_page17_real.py' else 'stub_copy'),
         'engine_script': str(script),
     }
