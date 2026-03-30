@@ -12,14 +12,44 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup SSH key
+      - name: Setup SSH key and connectivity diagnostics
+        shell: bash
         run: |
+          set -euo pipefail
           mkdir -p ~/.ssh
-          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_key
+          printf '%s\n' "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/ec2_key
           chmod 600 ~/.ssh/ec2_key
-          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+          echo "[INFO] host=${{ secrets.EC2_HOST }} user=${{ secrets.EC2_USER }}"
+          echo "[INFO] testing tcp/22 reachability"
+          timeout 10 bash -c "cat < /dev/null > /dev/tcp/${{ secrets.EC2_HOST }}/22" \
+            && echo "[OK] tcp/22 reachable" \
+            || (echo "[ERROR] tcp/22 unreachable" && exit 1)
+
+          echo "[INFO] populating known_hosts"
+          rm -f ~/.ssh/known_hosts
+          for i in 1 2 3; do
+            if ssh-keyscan -T 10 -H "${{ secrets.EC2_HOST }}" >> ~/.ssh/known_hosts 2>/tmp/ssh-keyscan.err; then
+              echo "[OK] ssh-keyscan succeeded on attempt $i"
+              break
+            fi
+            echo "[WARN] ssh-keyscan failed on attempt $i"
+            cat /tmp/ssh-keyscan.err || true
+            sleep 3
+            if [ "$i" = "3" ]; then
+              echo "[ERROR] unable to populate known_hosts"
+              exit 1
+            fi
+          done
+
+          echo "[INFO] testing ssh auth"
+          ssh -o BatchMode=yes -o ConnectTimeout=10 -i ~/.ssh/ec2_key \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "echo [OK] ssh login works"
 
       - name: Run remote deploy
+        shell: bash
         run: |
-          ssh -i ~/.ssh/ec2_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
+          set -euo pipefail
+          ssh -o BatchMode=yes -o ConnectTimeout=15 -i ~/.ssh/ec2_key \
+            ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} \
             "bash ${{ secrets.EC2_DEPLOY_PATH }}/deploy/scripts/deploy_prod.sh ${{ secrets.EC2_DEPLOY_PATH }}"
