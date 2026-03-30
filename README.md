@@ -32,3 +32,7 @@ Install deployable engine dependencies with:
 ## EC2 Auto Deploy
 - Workflow: `.github/workflows/deploy-ec2.yml`
 - Remote script: `deploy/scripts/deploy_prod.sh`
+
+## Auto Deploy Options
+- Preferred: `.github/workflows/deploy-self-hosted.yml` (self-hosted runner on EC2)
+- Fallback: `.github/workflows/deploy-ec2.yml` (SSH-based)
