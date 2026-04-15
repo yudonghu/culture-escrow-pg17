@@ -25,6 +25,23 @@ def _engine_python() -> str:
     return os.getenv('PG17_ENGINE_PYTHON', DEFAULT_ENGINE_PYTHON)
 
 
+def _validate_pdf_path(path: str, label: str) -> Path:
+    """Resolve and validate a PDF path to prevent path traversal attacks.
+
+    Only allows paths that are absolute and point to an existing file
+    (or a writeable parent directory for output paths).
+    """
+    resolved = Path(path).resolve()
+    # Disallow non-absolute or suspiciously short paths
+    if not resolved.is_absolute():
+        raise ValueError(f"Invalid {label}: must be an absolute path")
+    # Disallow paths with null bytes or shell metacharacters
+    suspicious = set('\x00;&|`$><!')
+    if any(c in path for c in suspicious):
+        raise ValueError(f"Invalid {label}: contains disallowed characters")
+    return resolved
+
+
 def fill_page17(
     source_pdf: str,
     output_pdf: str,
@@ -40,11 +57,17 @@ def fill_page17(
     if not script.exists():
         raise RuntimeError(f'engine script not found: {script}')
 
-    cmd = [python_bin, str(script), '--source', source_pdf]
+    source_path = _validate_pdf_path(source_pdf, 'source_pdf')
+    output_path = _validate_pdf_path(output_pdf, 'output_pdf')
+
+    if not source_path.exists():
+        raise ValueError(f'source_pdf does not exist: {source_path}')
+
+    cmd = [python_bin, str(script), '--source', str(source_path)]
 
     # support both repo-deploy real engine and stub engine
     if script.name == 'fill_page17_stub.py':
-        cmd += ['--output', output_pdf]
+        cmd += ['--output', str(output_path)]
     if deposit_amount:
         cmd += ['--deposit-amount', deposit_amount]
     if seller_agent_name:
@@ -65,9 +88,9 @@ def fill_page17(
     if not generated:
         raise RuntimeError('no output_pdf in summary')
 
-    generated_path = Path(generated)
-    if generated_path.resolve() != Path(output_pdf).resolve():
-        Path(output_pdf).write_bytes(generated_path.read_bytes())
+    generated_path = Path(generated).resolve()
+    if generated_path != output_path:
+        output_path.write_bytes(generated_path.read_bytes())
 
     return {
         'missing_inputs': summary.get('missing_inputs', []),
