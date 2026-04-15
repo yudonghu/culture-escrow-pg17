@@ -21,9 +21,20 @@ echo "[4/6] Install engine deps"
 
 echo "[5/6] Restart service"
 sudo systemctl restart pg17
-sleep 2
 
-echo "[6/6] Health check"
-curl --fail http://127.0.0.1:8787/health
+echo "[6/6] Health check (with retries)"
+for i in $(seq 1 30); do
+  if curl --fail --silent http://127.0.0.1:8787/health > /dev/null 2>&1; then
+    echo "[OK] service is healthy"
+    break
+  fi
+  if [ "$i" = "30" ]; then
+    echo "[ERROR] service failed to become healthy after 30s"
+    sudo systemctl status pg17 --no-pager || true
+    exit 1
+  fi
+  echo "[WAIT] attempt $i/30..."
+  sleep 1
+done
 
 echo "[OK] deploy complete"
