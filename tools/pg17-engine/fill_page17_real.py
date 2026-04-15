@@ -17,6 +17,7 @@ System dependency:
 import argparse
 import io
 import json
+import os
 import re
 from dataclasses import dataclass
 from datetime import datetime
@@ -33,14 +34,33 @@ class FillData:
     second_date: str | None = None
 
 
-FIXED = {
-    "counter_offer_numbers": "one",
-    "escrow_company": "Culture Escrow Inc.",
-    "by_name": "ESCROW_AGENT_NAME",
-    "address": "ESCROW_ADDRESS",
-    "phone": "ESCROW_PHONE",
-    "license": "ESCROW_LICENSE",
-}
+def _load_fixed() -> Dict[str, str]:
+    """Load fixed escrow company info from environment variables.
+
+    Required env vars (see .env.example):
+      PG17_ESCROW_COMPANY, PG17_BY_NAME, PG17_ADDRESS, PG17_PHONE, PG17_LICENSE
+    """
+    missing = []
+    fields = {
+        "escrow_company": os.getenv("PG17_ESCROW_COMPANY", ""),
+        "by_name": os.getenv("PG17_BY_NAME", ""),
+        "address": os.getenv("PG17_ADDRESS", ""),
+        "phone": os.getenv("PG17_PHONE", ""),
+        "license": os.getenv("PG17_LICENSE", ""),
+        "counter_offer_numbers": os.getenv("PG17_COUNTER_OFFER_NUMBERS", "one"),
+    }
+    for key, val in fields.items():
+        if not val and key != "counter_offer_numbers":
+            missing.append(key)
+    if missing:
+        raise EnvironmentError(
+            f"Missing required environment variables for fixed fields: "
+            + ", ".join(f"PG17_{k.upper()}" for k in missing)
+        )
+    return fields
+
+
+FIXED = _load_fixed()
 
 # Fallback coords if anchors fail.
 FALLBACK_COORDS: Dict[str, Tuple[float, float]] = {

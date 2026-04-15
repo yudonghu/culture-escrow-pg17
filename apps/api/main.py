@@ -20,18 +20,18 @@ from pg17_engine import fill_page17
 
 app = FastAPI(title="culture-escrow-pg17 API", version="0.2.2")
 
+_cors_origins_raw = os.getenv(
+    "PG17_CORS_ORIGINS",
+    "http://127.0.0.1:8080,http://localhost:8080,http://127.0.0.1:8081,http://localhost:8081",
+)
+_cors_origins = [o.strip() for o in _cors_origins_raw.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://127.0.0.1:8080",
-        "http://localhost:8080",
-        "http://127.0.0.1:8081",
-        "http://localhost:8081",
-        "https://app.hydenluc.com",
-    ],
+    allow_origins=_cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["content-type", "x-api-token", "x-idempotency-key", "x-actor"],
 )
 
 OUTPUT_DIR = Path(tempfile.gettempdir()) / "culture-escrow-pg17"
@@ -289,7 +289,7 @@ async def pg17_fill(
     except Exception as e:
         engine_ms = (time.perf_counter() - t1) * 1000
         logger.error("pg17_fill_failed request_id=%s job_id=%s upload_ms=%.2f engine_ms=%.2f error=%s", request_id, job_id, upload_ms, engine_ms, str(e))
-        _audit_log({"event": "fill_failed", "request_id": request_id, "job_id": job_id, "ts": time.time(), "actor": (x_actor or "unknown")[:64], "inputs": {"escrow_number": _mask_value(escrow_number or ""), "acceptance_date": acceptance_date or "", "second_date": second_date or ""}, "error_code": "PG17_500_ENGINE_FAILED", "error": str(e)[:500]})
+        _audit_log({"event": "fill_failed", "request_id": request_id, "job_id": job_id, "ts": time.time(), "actor": (x_actor or "unknown")[:64], "inputs": {"escrow_number": _mask_value(escrow_number or ""), "acceptance_date": "[redacted]", "second_date": "[redacted]"}, "error_code": "PG17_500_ENGINE_FAILED", "error": "engine processing failed"})
         raise HTTPException(status_code=500, detail={"error_code": "PG17_500_ENGINE_FAILED", "message": "fill failed", "hint": "Check PDF layout and required anchors on page 17.", "extra": {"error": str(e)}})
 
     engine_ms = (time.perf_counter() - t1) * 1000
@@ -300,7 +300,7 @@ async def pg17_fill(
 
     timings = {"upload": round(upload_ms, 2), "engine": round(engine_ms, 2), "export": round(export_ms, 2)}
 
-    _audit_log({"event": "fill_success", "request_id": request_id, "job_id": job_id, "ts": time.time(), "actor": (x_actor or "unknown")[:64], "inputs": {"escrow_number": _mask_value(escrow_number or ""), "acceptance_date": acceptance_date or "", "second_date": second_date or ""}, "timings_ms": timings, "result": {"missing_inputs": summary.get("missing_inputs", []), "filled_count": len(summary.get("filled_fields", [])), "left_blank_count": len(summary.get("left_blank", []))}})
+    _audit_log({"event": "fill_success", "request_id": request_id, "job_id": job_id, "ts": time.time(), "actor": (x_actor or "unknown")[:64], "inputs": {"escrow_number": _mask_value(escrow_number or ""), "acceptance_date": "[redacted]", "second_date": "[redacted]"}, "timings_ms": timings, "result": {"missing_inputs": summary.get("missing_inputs", []), "filled_count": len(summary.get("filled_fields", [])), "left_blank_count": len(summary.get("left_blank", []))}})
 
     if idem_key:
         store = _cleanup_idempotency_store(_load_idempotency_store())
