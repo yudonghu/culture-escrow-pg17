@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import collections
 import json
 from datetime import datetime, timedelta, timezone
 import hashlib
 import logging
 import os
 import re
+import shutil
 import tempfile
+import threading
 import time
 import uuid
 from pathlib import Path
@@ -53,7 +56,11 @@ def _load_idempotency_store() -> dict:
         return {}
     try:
         return json.loads(IDEMPOTENCY_STORE_PATH.read_text(encoding="utf-8"))
-    except Exception:
+    except json.JSONDecodeError:
+        logger.warning("idempotency store corrupted, resetting: %s", IDEMPOTENCY_STORE_PATH)
+        return {}
+    except OSError as e:
+        logger.error("failed to read idempotency store: %s", e)
         return {}
 
 
@@ -95,7 +102,8 @@ def _cleanup_old_outputs(retention_days: int) -> dict:
             if mtime < cutoff:
                 f.unlink(missing_ok=True)
                 deleted += 1
-        except Exception:
+        except OSError as e:
+            logger.warning("cleanup: failed to remove %s: %s", f, e)
             continue
 
     event = {
@@ -133,6 +141,26 @@ def _valid_date(v: str) -> bool:
 
 def _new_request_id() -> str:
     return f"req_{uuid.uuid4().hex[:12]}"
+
+
+RATE_LIMIT_PER_MINUTE = int(os.getenv("PG17_RATE_LIMIT_PER_MINUTE", "20"))
+_rate_limit_lock = threading.Lock()
+_rate_limit_counters: dict[str, collections.deque] = {}
+
+
+def _check_rate_limit(client_ip: str) -> bool:
+    """Sliding-window rate limiter. Returns False if the client is over the limit."""
+    if not RATE_LIMIT_PER_MINUTE:
+        return True
+    now = time.time()
+    with _rate_limit_lock:
+        dq = _rate_limit_counters.setdefault(client_ip, collections.deque())
+        while dq and dq[0] < now - 60.0:
+            dq.popleft()
+        if len(dq) >= RATE_LIMIT_PER_MINUTE:
+            return False
+        dq.append(now)
+        return True
 
 
 def _check_auth(request_id: str, x_api_token: Optional[str]) -> None:
@@ -205,14 +233,23 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 @app.get("/health")
 def health(request: Request):
+    from pg17_engine import _engine_script
+    engine_script = _engine_script()
+    checks = {
+        "output_dir_writable": OUTPUT_DIR.exists() and os.access(OUTPUT_DIR, os.W_OK),
+        "engine_script_exists": engine_script.exists(),
+        "disk_free_gb": round(shutil.disk_usage(OUTPUT_DIR).free / (1024 ** 3), 2),
+    }
+    ok = checks["output_dir_writable"] and checks["engine_script_exists"]
     return {
-        "ok": True,
+        "ok": ok,
         "request_id": request.state.request_id,
         "service": "culture-escrow-pg17-api",
         "auth_enabled": bool(API_TOKEN),
         "audit_log_path": str(AUDIT_LOG_PATH),
         "retention_days": RETENTION_DAYS,
         "idempotency_ttl_seconds": IDEMPOTENCY_TTL_SECONDS,
+        "checks": checks,
     }
 
 
@@ -240,6 +277,10 @@ async def pg17_fill(
     request_id = request.state.request_id
     _check_auth(request_id, x_api_token)
 
+    client_ip = request.client.host if request.client else "unknown"
+    if not _check_rate_limit(client_ip):
+        raise HTTPException(status_code=429, detail={"error_code": "PG17_429_RATE_LIMITED", "message": "too many requests", "hint": f"max {RATE_LIMIT_PER_MINUTE} requests per minute per IP"})
+
     if not source_pdf.filename or not source_pdf.filename.lower().endswith(".pdf"):
         raise HTTPException(status_code=400, detail={"error_code": "PG17_400_INVALID_PDF", "message": "source_pdf must be a PDF", "hint": "upload a .pdf file"})
 
@@ -266,9 +307,10 @@ async def pg17_fill(
     payload_hash = _build_payload_hash(content, payload_fields)
 
     idem_key = (x_idempotency_key or "").strip()
+    idem_store: dict = {}
     if idem_key:
-        store = _cleanup_idempotency_store(_load_idempotency_store())
-        hit = store.get(idem_key)
+        idem_store = _cleanup_idempotency_store(_load_idempotency_store())
+        hit = idem_store.get(idem_key)
         if hit and hit.get("payload_hash") == payload_hash and hit.get("status") == "success":
             _audit_log({"event": "idempotency_hit", "request_id": request_id, "job_id": hit.get("job_id"), "ts": time.time(), "key": idem_key[:64]})
             return JSONResponse({"ok": True, "request_id": request_id, "job_id": hit.get("job_id"), "output_file": hit.get("output_file"), "timings_ms": hit.get("timings_ms", {}), "summary": hit.get("summary", {}), "idempotency": {"hit": True, "key": idem_key}})
@@ -303,9 +345,8 @@ async def pg17_fill(
     _audit_log({"event": "fill_success", "request_id": request_id, "job_id": job_id, "ts": time.time(), "actor": (x_actor or "unknown")[:64], "inputs": {"escrow_number": _mask_value(escrow_number or ""), "acceptance_date": "[redacted]", "second_date": "[redacted]"}, "timings_ms": timings, "result": {"missing_inputs": summary.get("missing_inputs", []), "filled_count": len(summary.get("filled_fields", [])), "left_blank_count": len(summary.get("left_blank", []))}})
 
     if idem_key:
-        store = _cleanup_idempotency_store(_load_idempotency_store())
-        store[idem_key] = {"ts": time.time(), "status": "success", "payload_hash": payload_hash, "job_id": job_id, "output_file": f"/v1/pg17/output/{job_id}", "timings_ms": timings, "summary": summary}
-        _save_idempotency_store(store)
+        idem_store[idem_key] = {"ts": time.time(), "status": "success", "payload_hash": payload_hash, "job_id": job_id, "output_file": f"/v1/pg17/output/{job_id}", "timings_ms": timings, "summary": summary}
+        _save_idempotency_store(idem_store)
 
     return JSONResponse({"ok": True, "request_id": request_id, "job_id": job_id, "output_file": f"/v1/pg17/output/{job_id}", "timings_ms": timings, "summary": summary, "idempotency": {"hit": False, "key": idem_key or None}})
 
