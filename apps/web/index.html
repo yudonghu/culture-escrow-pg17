@@ -33,7 +33,7 @@
     }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
     label { display:block; margin-top:12px; font-weight: 600; }
-    input { width:100%; padding:10px; margin-top:6px; border:1px solid #d6d6d6; border-radius: 10px; }
+    input { width:100%; padding:10px; margin-top:6px; border:1px solid #d6d6d6; border-radius: 10px; box-sizing: border-box; }
     button {
       margin-top:18px; padding:12px 18px; border:none; border-radius:999px;
       background:#b08a4a; color:white; font-weight:700; cursor:pointer;
@@ -73,23 +73,23 @@
           </div>
           <div>
             <label>Deposit Amount</label>
-            <input name="deposit_amount" placeholder="266,400.00">
+            <input name="deposit_amount" placeholder="ex: 266,400.00">
           </div>
           <div>
             <label>Seller Agent Name</label>
-            <input name="seller_agent_name" placeholder="Carol Chua">
+            <input name="seller_agent_name" placeholder="ex: Carol Chua">
           </div>
           <div>
             <label>Escrow Number</label>
-            <input name="escrow_number" placeholder="024899-01">
+            <input name="escrow_number" placeholder="ex: 024899-01">
           </div>
           <div>
             <label>Acceptance Date</label>
-            <input name="acceptance_date" placeholder="03/20/2026">
+            <input name="acceptance_date" placeholder="ex: 03/20/2026">
           </div>
           <div>
             <label>Second Date</label>
-            <input name="second_date" placeholder="03/20/2026">
+            <input name="second_date" placeholder="ex: 03/20/2026">
           </div>
         </div>
         <button type="submit">Run Fill</button>
