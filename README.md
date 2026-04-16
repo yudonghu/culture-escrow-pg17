@@ -66,7 +66,7 @@ See `.env.example` for local defaults and `deploy/environments/` for staging/pro
 
 ```bash
 source .venv/bin/activate
-pip install -r apps/api/requirements-dev.txt
+pip install -r requirements-dev.txt
 pytest
 ```
 
