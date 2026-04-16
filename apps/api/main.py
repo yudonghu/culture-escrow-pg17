@@ -5,6 +5,14 @@ Business logic lives in pg17_service.py.
 """
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+# Ensure apps/api/ is in sys.path so pg17_service is importable
+# regardless of how uvicorn is invoked (e.g. `uvicorn apps.api.main:app`
+# from repo root, where apps/api/ is not on sys.path by default).
+sys.path.insert(0, str(Path(__file__).parent))
+
 import collections
 import logging
 import os
