@@ -6,9 +6,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_ENGINE_SCRIPT = ROOT / 'tools' / 'pg17-engine' / 'fill_page17_real.py'
-FALLBACK_ENGINE_SCRIPT = ROOT / 'tools' / 'pg17-engine' / 'fill_page17_stub.py'
+ENGINE_DIR = Path(__file__).resolve().parent
+DEFAULT_ENGINE_SCRIPT = ENGINE_DIR / 'fill_page17_real.py'
+FALLBACK_ENGINE_SCRIPT = ENGINE_DIR / 'fill_page17_stub.py'
 DEFAULT_ENGINE_PYTHON = sys.executable
 
 

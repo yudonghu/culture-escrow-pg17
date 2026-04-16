@@ -5,7 +5,7 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 
 source .venv/bin/activate
-pip install -r tools/pg17-engine/requirements.txt
+pip install -r packages/pg17-fill-engine/requirements.txt
 
 if command -v apt >/dev/null 2>&1; then
   sudo apt update
