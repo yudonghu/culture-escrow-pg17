@@ -31,46 +31,167 @@
       border: 1px solid #e6dfd2;
       margin-bottom: 22px;
     }
-    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
-    label { display:block; margin-top:12px; font-weight: 600; }
-    input { width:100%; padding:10px; margin-top:6px; border:1px solid #d6d6d6; border-radius: 10px; box-sizing: border-box; }
-    button {
-      margin-top:18px; padding:12px 18px; border:none; border-radius:999px;
-      background:#b08a4a; color:white; font-weight:700; cursor:pointer;
+    .card h2 { margin: 0 0 18px; font-size: 20px; }
+
+    /* Source PDF full-width row */
+    .field-full { margin-bottom: 16px; }
+
+    /* 5-field grid */
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+
+    label { display: block; margin-bottom: 6px; font-weight: 600; font-size: 14px; }
+
+    /* Text inputs */
+    input[type="text"], input[type="number"], input:not([type]) {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d6d6d6;
+      border-radius: 10px;
+      box-sizing: border-box;
+      font-size: 14px;
+      color: #18212b;
+      background: white;
     }
-    pre { background:#f7f7f7; padding:14px; border-radius:10px; overflow:auto; }
-    .muted { color:#5a6470; }
-    .success a { color:#0b5cab; font-weight:700; }
+    input:focus { outline: none; border-color: #b08a4a; box-shadow: 0 0 0 3px rgba(176,138,74,0.12); }
+
+    /* Custom file input */
+    .file-input-wrapper { position: relative; }
+    .file-input-wrapper input[type="file"] { position: absolute; opacity: 0; width: 100%; height: 100%; top: 0; left: 0; cursor: pointer; }
+    .file-display {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid #d6d6d6;
+      border-radius: 10px;
+      background: white;
+      box-sizing: border-box;
+      cursor: pointer;
+    }
+    .file-display:hover { border-color: #b08a4a; }
+    .file-display .browse-btn {
+      background: #b08a4a;
+      color: white;
+      padding: 4px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .file-display .file-name {
+      color: #5a6470;
+      font-size: 14px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+    .file-display .file-name.chosen { color: #18212b; font-weight: 600; }
+
+    /* Submit button */
+    .submit-row { margin-top: 20px; }
+    button[type="submit"] {
+      padding: 12px 28px;
+      border: none;
+      border-radius: 999px;
+      background: #b08a4a;
+      color: white;
+      font-weight: 700;
+      font-size: 15px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button[type="submit"]:hover { background: #9a7840; }
+    button[type="submit"]:disabled { background: #ccc; cursor: not-allowed; }
+
+    /* Status card */
+    #status-card { display: none; }
+    .status-processing { color: #5a6470; }
+    .status-success { color: #1a7a3c; font-weight: 600; }
+    .status-failed { color: #c0392b; font-weight: 600; }
+    .download-link {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 10px 22px;
+      background: #142334;
+      color: white;
+      border-radius: 999px;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    .download-link:hover { background: #1e3a55; }
+    .error-hint {
+      margin-top: 8px;
+      padding: 10px 14px;
+      background: #fdf2f2;
+      border-left: 3px solid #c0392b;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #7b2020;
+    }
+
+    /* How to Use card */
+    .steps { margin: 0; padding: 0; list-style: none; counter-reset: steps; }
+    .steps li {
+      counter-increment: steps;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 12px 0;
+      border-bottom: 1px solid #f0ece4;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .steps li:last-child { border-bottom: none; }
+    .steps li::before {
+      content: counter(steps);
+      background: #142334;
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+    .muted { color: #5a6470; }
   </style>
 </head>
 <body>
   <section class="hero">
     <div class="hero-inner">
       <h1>PG17 Fill Tool</h1>
-      <p>
-        Culture Escrow PG17 is the first production-style tool being connected to the portal experience.
-        Use this page to upload a PDF, submit required escrow fields, and download the completed output.
-      </p>
+      <p>Upload a PG17 PDF, fill in the escrow fields, and download the completed document in seconds.</p>
     </div>
   </section>
 
   <div class="container">
-    <div class="card">
-      <h2>Tool Overview</h2>
-      <p class="muted">
-        This v1 web page is a cleaner front-end wrapper around the pg17 API. It is intended to become
-        the real “Open tool” destination from the portal.
-      </p>
-    </div>
 
+    <!-- Submission form -->
     <div class="card">
       <h2>PG17 Submission</h2>
       <form id="f">
-        <div class="grid">
-          <div>
-            <label>Source PDF</label>
-            <input type="file" name="source_pdf" accept="application/pdf" required>
+
+        <!-- Source PDF — full width -->
+        <div class="field-full">
+          <label for="source_pdf_input">Source PDF</label>
+          <div class="file-input-wrapper">
+            <div class="file-display" id="file-display">
+              <span class="browse-btn">Browse</span>
+              <span class="file-name" id="file-name">Choose a PDF file…</span>
+            </div>
+            <input type="file" id="source_pdf_input" name="source_pdf" accept="application/pdf" required>
           </div>
+        </div>
+
+        <!-- 5 fields in responsive grid -->
+        <div class="grid">
           <div>
             <label>Deposit Amount</label>
             <input name="deposit_amount" placeholder="ex: 266,400.00">
@@ -92,44 +213,86 @@
             <input name="second_date" placeholder="ex: 03/20/2026">
           </div>
         </div>
-        <button type="submit">Run Fill</button>
+
+        <div class="submit-row">
+          <button type="submit" id="submit-btn">Run Fill</button>
+        </div>
       </form>
     </div>
 
-    <div class="card">
-      <h2>Status</h2>
-      <p id="msg" class="muted">Waiting for submission.</p>
-      <p id="hint" class="muted"></p>
-      <pre id="out"></pre>
+    <!-- Status — hidden until submission -->
+    <div class="card" id="status-card">
+      <h2>Result</h2>
+      <p id="msg"></p>
+      <div id="result-body"></div>
     </div>
+
+    <!-- How to Use — moved to bottom -->
+    <div class="card">
+      <h2>How to Use</h2>
+      <ol class="steps">
+        <li>Click <strong>Browse</strong> and select the original PG17 PDF you received.</li>
+        <li>Fill in the escrow fields — all fields are optional except the PDF file itself.</li>
+        <li>Click <strong>Run Fill</strong> and wait a few seconds while the form is processed.</li>
+        <li>When done, click <strong>Download</strong> to save the completed PDF.</li>
+        <li>Dates must be in <strong>MM/DD/YYYY</strong> format (ex: 03/20/2026).</li>
+      </ol>
+    </div>
+
   </div>
 
   <script>
     const API_BASE = 'https://api.hydenluc.com';
-    const f = document.getElementById('f');
+    const form = document.getElementById('f');
+    const submitBtn = document.getElementById('submit-btn');
+    const statusCard = document.getElementById('status-card');
     const msg = document.getElementById('msg');
-    const out = document.getElementById('out');
-    const hint = document.getElementById('hint');
+    const resultBody = document.getElementById('result-body');
 
-    f.onsubmit = async (e) => {
-      e.preventDefault();
-      msg.textContent = 'Processing...';
-      hint.textContent = '';
-      out.textContent = '';
-
-      const fd = new FormData(f);
-      const r = await fetch(`${API_BASE}/v1/pg17/fill`, { method: 'POST', body: fd });
-      const j = await r.json();
-      out.textContent = JSON.stringify(j, null, 2);
-
-      if (!r.ok) {
-        msg.textContent = 'Failed';
-        hint.textContent = (j && j.detail && (j.detail.hint || j.detail)) || 'Please review the required fields and PDF file.';
-        return;
+    // Show chosen filename in custom file display
+    document.getElementById('source_pdf_input').addEventListener('change', function () {
+      const nameEl = document.getElementById('file-name');
+      if (this.files && this.files[0]) {
+        nameEl.textContent = this.files[0].name;
+        nameEl.classList.add('chosen');
+      } else {
+        nameEl.textContent = 'Choose a PDF file…';
+        nameEl.classList.remove('chosen');
       }
+    });
 
-      msg.innerHTML = `<span class="success">Done: <a href="${API_BASE}${j.output_file}" target="_blank">Download done.pdf</a></span>`;
-      hint.textContent = 'If fields are missing, please check summary.missing_inputs.';
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Processing…';
+      statusCard.style.display = 'block';
+      msg.className = 'status-processing';
+      msg.textContent = 'Filling in your PDF, please wait…';
+      resultBody.innerHTML = '';
+
+      try {
+        const fd = new FormData(form);
+        const r = await fetch(`${API_BASE}/v1/pg17/fill`, { method: 'POST', body: fd });
+        const j = await r.json();
+
+        if (!r.ok) {
+          msg.className = 'status-failed';
+          msg.textContent = '✕ Fill failed.';
+          const hint = (j && j.hint) || (j && j.detail && j.detail.hint) || 'Please check your inputs and try again.';
+          resultBody.innerHTML = `<div class="error-hint">${hint}</div>`;
+        } else {
+          msg.className = 'status-success';
+          msg.textContent = '✓ Done! Your PDF is ready.';
+          resultBody.innerHTML = `<a class="download-link" href="${API_BASE}${j.output_file}" target="_blank">⬇ Download Completed PDF</a>`;
+        }
+      } catch (err) {
+        msg.className = 'status-failed';
+        msg.textContent = '✕ Network error. Please try again.';
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Run Fill';
+        statusCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
     };
   </script>
 </body>
