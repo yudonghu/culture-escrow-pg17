@@ -1,23 +1,34 @@
-# 架构设计（V0）
+# 架构设计（当前生产版）
 
 ## 1. 分层
-- Client：上传/参数输入/结果下载
-- API：请求校验、任务编排、结果返回
-- Engine：pg17 填充核心逻辑
+- Client：上传/参数输入/结果下载（`apps/web/index.html`，由 Caddy 静态服务）
+- HTTP 层：请求路由、认证、速率限制（`apps/api/main.py`，FastAPI）
+- 业务逻辑层：任务编排、幂等、审计、引擎调用（`apps/api/pg17_service.py`，PG17Service 类）
+- Engine：pg17 填充核心逻辑（子进程调用）
 
 ## 2. 模块边界
-- `apps/web`：前端页面
-- `apps/api`：服务端接口
-- `packages/pg17-fill-engine`：可复用填充模块
-- `packages/shared-types`：统一 schema
+- `apps/web/index.html`：前端单页应用，由 Caddy 从 `/var/www/pg17-web/` 静态服务
+- `apps/api/main.py`：HTTP 层（FastAPI，路由、认证、速率限制 20次/分钟/IP）
+- `apps/api/pg17_service.py`：业务逻辑层（PG17Service 类，PR #25 从 main.py 抽出）
+- `packages/pg17-fill-engine/pg17_engine.py`：引擎子进程调用包装
+- `tools/pg17-engine/fill_page17_real.py`：真实填写脚本（OCR + reportlab，生产使用）
+- `tools/pg17-engine/fill_page17_stub.py`：本地测试桩（测试/开发使用）
 
 ## 3. 流程
-1) 客户端上传 PDF + 参数
-2) API 校验参数
-3) 调用 pg17 engine
-4) 返回 done.pdf 与 run summary
+1) 客户端上传 PDF + 参数（multipart/form-data）
+2) `main.py` 校验认证（Bearer token）、速率限制
+3) 交由 `PG17Service` 处理业务逻辑（幂等检查、审计日志）
+4) 调用 pg17 engine 子进程填充
+5) 返回 done.pdf 与 run summary（含 timings_ms）
 
 ## 4. 设计原则
-- 引擎逻辑与接口层解耦
-- 同输入同输出（可重复）
-- 错误信息可读、可定位
+- 引擎逻辑与接口层解耦（engine 独立子进程）
+- HTTP 层与业务层分离（main.py 不含业务逻辑）
+- 同输入同输出（幂等性，基于 x-idempotency-key）
+- 错误信息可读、可定位（error_code + request_id）
+
+## 5. 关键中间件
+- Bearer token 认证（`PG17_API_TOKEN` 非空时启用）
+- 速率限制：20次/分钟/IP（内存滑动窗口）
+- 幂等存储：文件级 JSON store（`PG17_IDEMPOTENCY_STORE`）
+- 审计日志：JSONL 格式（`PG17_AUDIT_LOG_PATH`），敏感字段脱敏

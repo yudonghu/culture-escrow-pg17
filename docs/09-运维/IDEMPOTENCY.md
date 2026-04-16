@@ -12,8 +12,8 @@ Avoid duplicate processing when client retries the same request.
 - No key => normal processing.
 
 ## Config
-- `PG17_IDEMPOTENCY_TTL_SECONDS` (default `3600`)
-- `PG17_IDEMPOTENCY_STORE` (default `/tmp/culture-escrow-pg17/idempotency_store.json`)
+- `PG17_IDEMPOTENCY_TTL_SECONDS` (default `7200`, 生产配置 7200 秒)
+- `PG17_IDEMPOTENCY_STORE` (生产配置 `/var/lib/pg17/prod-idempotency.json`)
 
 ## Notes
 - Current implementation is file-based MVP for single-instance deployment.
