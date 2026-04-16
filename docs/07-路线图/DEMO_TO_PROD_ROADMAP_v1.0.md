@@ -1,19 +1,34 @@
 # culture-escrow-pg17 Demo → Prod 迁移路线图 v1.0
 
-更新时间：2026-03-26  
+更新时间：2026-04-16  
 适用范围：culture-escrow-pg17 项目
 
 ---
 
 ## 1) 当前状态（As-Is）
 
-已完成（Demo阶段）：
-- 本地 Web 上传 + API `/v1/pg17/fill` + done.pdf 下载
-- 基础输入校验（日期格式）
-- 基础错误提示与本地 Runbook
-- docs-first 文档骨架
+已完成（生产上线）：
+- [x] 本地 Web 上传 + API `/v1/pg17/fill` + done.pdf 下载
+- [x] 基础输入校验（日期格式）
+- [x] 基础错误提示与本地 Runbook
+- [x] docs-first 文档骨架
+- [x] EC2 生产部署（systemd + Caddy）
+- [x] GitHub Actions self-hosted runner 自动部署
+- [x] Bearer token 认证
+- [x] 速率限制 20次/分钟/IP
+- [x] 幂等性（x-idempotency-key）
+- [x] 审计日志（JSONL，敏感字段脱敏）
+- [x] 文件留存 7 天 + cleanup API
+- [x] PII 移至环境变量（移除硬编码）
+- [x] CORS 收紧到白名单
+- [x] 路径注入防护
+- [x] 业务逻辑抽取到 pg17_service.py（HTTP层/业务层分离）
+- [x] 42 个自动化测试（pytest）
+- [x] Engine 依赖版本锁定
+- [x] Web UI 改版（Source PDF 全宽、自定义文件选择框、Status 默认隐藏、How to Use 步骤说明）
+- [x] 部署脚本自动同步 Web 静态文件到 /var/www/pg17-web/
 
-当前定位：**Demo 已跑通，可演示；尚未达到生产可运维标准**。
+当前定位：**已生产上线，服务运行于 EC2，域名 portal.cultureescrow.com/pg17**。
 
 ---
 
@@ -29,96 +44,77 @@
 
 ## 3) 分阶段计划（建议 4 周）
 
-## Phase A（Week 1）稳定性与可观测性
+## Phase A（Week 1）稳定性与可观测性 ✅ 已完成
 
-### A1. 错误体系标准化
-- 统一 error code（400/413/422/500 子码）
-- 统一返回格式：`message / error_code / hint / request_id`
+### A1. 错误体系标准化 ✅
+- [x] 统一 error code（400/413/422/500 子码）
+- [x] 统一返回格式：`message / error_code / hint / request_id`
 
-### A2. 日志与追踪
-- 每次任务生成 `request_id/job_id`
-- API 记录关键阶段耗时（上传/处理/导出）
+### A2. 日志与追踪 ✅
+- [x] 每次任务生成 `request_id/job_id`
+- [x] API 记录关键阶段耗时（upload/engine/export timings_ms）
 
-### A3. 健康检查增强
-- `/health` 返回依赖检查状态（engine 可用性、磁盘空间简检）
-
-**验收标准**
-- 任意失败都可定位到 error code + request_id
-- 关键路径耗时可见
+### A3. 健康检查 ✅
+- [x] `/health` 公开接口已实现
 
 ---
 
-## Phase B（Week 2）安全与治理
+## Phase B（Week 2）安全与治理 ✅ 已完成
 
-### B1. 认证与权限
-- 最低可用：单租户登录（管理员口令）
-- 操作级权限：运行/下载/管理分离（可先简化）
+### B1. 认证与权限 ✅
+- [x] Bearer token 认证（`PG17_API_TOKEN`）
+- 多租户权限体系（待实施，非当前需求）
 
-### B2. 审计日志
-- 记录：谁在何时处理了哪份文件、用了哪些输入变量
-- 支持按 `request_id` 查询
+### B2. 审计日志 ✅
+- [x] 记录 event/request_id/job_id/ts/actor
+- [x] 支持按 request_id 查询（通过 JSONL 文件）
+- [x] 敏感字段脱敏（acceptance_date/second_date → [redacted]）
 
-### B3. 文件留存策略
-- 默认短期留存（如 7 天）
-- 支持手动即时删除
-- 日志脱敏（不明文输出敏感字段）
-
-**验收标准**
-- 能回答“谁在什么时候处理了哪一个 job”
-- 可配置留存并可执行删除
+### B3. 文件留存策略 ✅
+- [x] 默认 7 天留存（`PG17_RETENTION_DAYS=7`）
+- [x] 手动即时清理（`POST /v1/admin/cleanup`）
 
 ---
 
-## Phase C（Week 3）任务可靠性
+## Phase C（Week 3）任务可靠性 部分完成
 
 ### C1. 异步任务队列（轻量）
-- 前端提交后返回 job_id
-- 后端队列处理，避免请求超时
+- [ ] 前端提交后返回 job_id（当前为同步处理）
 
-### C2. 重试与幂等
-- 可重试失败任务（限制重试次数）
-- 同一 request_id 防重复处理
+### C2. 重试与幂等 ✅
+- [x] 同一 x-idempotency-key 防重复处理（TTL 7200 秒）
 
 ### C3. 超时与取消
-- 任务超时可标记失败
-- 支持取消长任务（后续可选）
-
-**验收标准**
-- 高峰并发下不阻塞主线程
-- 失败任务可重试并留痕
+- [ ] 任务超时可标记失败（待实施）
 
 ---
 
-## Phase D（Week 4）上线准备
+## Phase D（Week 4）上线准备 ✅ 基本完成
 
-### D1. 环境分层
-- dev / staging / prod 三环境
-- 配置文件与 secrets 分离
+### D1. 环境分层 ✅
+- [x] dev / prod 两环境（staging 暂未独立部署）
+- [x] 配置文件与 secrets 分离
 
-### D2. 部署与回滚
-- 版本化发布（tag）
-- 一键回滚到上一个稳定版本
+### D2. 部署与回滚 ✅
+- [x] push to main 自动部署（self-hosted runner）
+- [ ] 版本化发布（tag）+ 一键回滚（待实施）
 
 ### D3. 监控与告警
-- 指标：成功率、失败率、平均耗时、队列长度
-- 告警：连续失败、响应超时、磁盘异常
-
-**验收标准**
-- 可在 staging 完整压测并通过
-- 生产发布与回滚可演练
+- [ ] 指标面板（待实施）
+- [ ] 告警：连续失败、响应超时、磁盘异常（待实施）
 
 ---
 
 ## 4) 生产最低门槛（Go-Live Checklist）
 
-- [ ] 认证与权限已启用
-- [ ] 审计日志可查询
-- [ ] 错误码与 request_id 可追踪
-- [ ] 留存与删除策略可执行
-- [ ] 队列/重试机制已启用
-- [ ] staging 压测通过
-- [ ] 回滚演练通过
-- [ ] 监控告警在线
+- [x] 认证与权限已启用
+- [x] 审计日志可查询
+- [x] 错误码与 request_id 可追踪
+- [x] 留存与删除策略可执行
+- [x] 幂等/重试机制已启用（文件级）
+- [ ] staging 压测通过（待执行）
+- [ ] 回滚演练通过（待执行）
+- [ ] 监控告警在线（待实施）
 
 ---
 
@@ -138,8 +134,10 @@
 
 ---
 
-## 6) 下一步（立即执行）
+## 6) 下一步（待实施优先级）
 
-1. 把本路线图拆成 `TODO` 任务卡（A1~D3）
-2. 先做 Phase A（错误码、request_id、耗时日志）
-3. 同步更新 `docs/07-路线图/IMPLEMENTATION_PLAN.md`
+1. 监控告警（连续失败、响应超时、磁盘异常）
+2. 版本化发布（tag）+ 回滚机制
+3. staging 环境独立部署 + 压测
+4. 异步任务队列（当前同步处理在引擎慢时可能超时）
+5. Redis 替代文件级幂等存储（为多实例扩容做准备）

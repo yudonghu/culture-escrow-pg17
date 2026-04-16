@@ -11,7 +11,7 @@ python3.11 --version
 
 ## 1. Setup venv
 ```bash
-cd /Users/wu/workspace/culture-escrow-pg17
+cd ~/Developer/ClaudeCodeSpace/culture-escrow-pg17
 rm -rf .venv
 python3.11 -m venv .venv
 source .venv/bin/activate
@@ -26,7 +26,7 @@ pip install -r apps/api/requirements.txt
 
 ## 3. Start API (Terminal A)
 ```bash
-cd /Users/wu/workspace/culture-escrow-pg17
+cd ~/Developer/ClaudeCodeSpace/culture-escrow-pg17
 source .venv/bin/activate
 export PYTHONPATH="$PWD/packages/pg17-fill-engine"
 uvicorn apps.api.main:app --host 127.0.0.1 --port 8787
@@ -49,7 +49,15 @@ python3 -m http.server 8788 --directory apps/web
 - If browser keeps "处理中...": verify API is running and CORS enabled.
 - If `pydantic-core` build fails: make sure using Python 3.11, not 3.14.
 
-## 6. Optional auth (Phase B-1)
+## 6. Run tests (optional)
+```bash
+source .venv/bin/activate
+python -m pytest tests/ -v
+```
+
+本地测试使用 stub engine，无需配置生产环境变量（`PG17_ESCROW_COMPANY` 等）。
+
+## 7. Optional auth
 If you want to enable minimal auth in local/staging:
 
 ```bash
@@ -63,7 +71,7 @@ Notes:
 - If `PG17_API_TOKEN` is empty, auth is disabled (demo mode).
 - `GET /health` remains public to support health checks.
 
-## 7. Retention cleanup (Phase B-3)
+## 8. Retention cleanup
 Set retention window:
 
 ```bash
