@@ -19,10 +19,14 @@ pip install -r apps/api/requirements.txt
 echo "[4/6] Install engine deps"
 ./deploy/scripts/install_engine_deps.sh
 
-echo "[5/6] Restart service"
+echo "[5/6] Sync web static files"
+sudo mkdir -p /var/www/pg17-web
+sudo cp "$ROOT/apps/web/index.html" /var/www/pg17-web/index.html
+
+echo "[6/7] Restart service"
 sudo systemctl restart pg17
 
-echo "[6/6] Health check (with retries)"
+echo "[7/7] Health check (with retries)"
 for i in $(seq 1 30); do
   if curl --fail --silent http://127.0.0.1:8787/health > /dev/null 2>&1; then
     echo "[OK] service is healthy"
