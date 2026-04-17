@@ -1,0 +1,9 @@
+/var/log/pg17/*.log.jsonl {
+    daily
+    rotate 30
+    compress
+    delaycompress
+    missingok
+    notifempty
+    copytruncate
+}
