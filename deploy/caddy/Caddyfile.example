@@ -1,0 +1,34 @@
+# Caddy configuration for culture-escrow-pg17
+#
+# This file documents the pg17-relevant blocks of the production Caddyfile.
+# Location on server: /etc/caddy/Caddyfile
+#
+# After editing, validate and reload with:
+#   sudo caddy validate --config /etc/caddy/Caddyfile
+#   sudo systemctl reload caddy
+
+# --- pg17 Web UI ---
+# Serves the static frontend from /var/www/pg17-web/
+# Protected by forward_auth (adjust or remove if no auth layer is present)
+
+<YOUR_PORTAL_DOMAIN> {
+
+  handle /pg17 {
+    # Remove the forward_auth block if no authentication layer is in use
+    forward_auth localhost:3000 {
+      uri /api/check-auth
+    }
+    root * /var/www/pg17-web
+    rewrite * /index.html
+    file_server
+  }
+
+  # ... other services on this domain go here ...
+}
+
+# --- pg17 API ---
+# Reverse-proxies HTTPS traffic to the local uvicorn process
+
+<YOUR_API_DOMAIN> {
+  reverse_proxy 127.0.0.1:8787
+}
