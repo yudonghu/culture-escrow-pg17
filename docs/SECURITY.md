@@ -18,7 +18,7 @@
 - 路径验证防止路径注入攻击（PR #20 收紧）
 
 ### 速率限制
-- 20 次/分钟/IP（内存滑动窗口，PR #21，`PG17_RATE_LIMIT_PER_MINUTE`）
+- 20 次/分钟/IP（内存滑动窗口，`PG17_RATE_LIMIT_PER_MINUTE`）
 
 ### 审计日志脱敏
 - 敏感字段（`acceptance_date`、`second_date`）写入审计日志时替换为 `[redacted]`
