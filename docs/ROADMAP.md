@@ -23,6 +23,11 @@
 - [x] API 返回三段耗时（timings_ms）
 - [x] `/health` 公开接口
 - [x] 文档整理（docs-first，docs 扁平化）
+- [x] Web UI 错误提示按状态码分类 + 60s 超时保护（PR #36）
+- [x] 修复 Caddyfile 缺少 `api.hydenluc.com`（服务不可达）
+- [x] 修复生产 CORS 漏掉 `portal.cultureescrow.com`
+- [x] git 历史 PII 清除（`git filter-repo`）+ repo 改为 public
+- [x] Caddyfile 纳入版本控制（`deploy/caddy/Caddyfile.example`）
 
 **当前定位：生产上线，服务运行于 EC2，域名 portal.cultureescrow.com/pg17。**
 
@@ -47,6 +52,7 @@
 ### Phase 3 — 待实施
 
 #### 近期（改动小，优先做）
+- [ ] `.env.prod.example` 补全 CORS 配置（`portal.cultureescrow.com` 漏掉了）
 - [ ] PR 时自动跑测试（GitHub Actions test workflow，merge 前验证）
 - [ ] Makefile（`make run` / `make test` / `make deploy` 统一入口）
 - [ ] `/health` 返回版本号（commit sha）和 uptime
