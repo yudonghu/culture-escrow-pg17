@@ -1,7 +1,7 @@
 # 运维手册
 
 ## 生产服务信息
-- EC2 IP: 50.18.170.151，用户: ubuntu
+- EC2 IP: <EC2_IP>，用户: ubuntu
 - 部署路径: `/opt/services/culture-escrow-pg17/`
 - systemd 服务: `pg17`（端口 8787）
 - 前端 URL: `portal.cultureescrow.com/pg17`
@@ -10,7 +10,7 @@
 
 ## SSH 登录
 ```bash
-ssh -i ~/Downloads/CultureEscrow-EC2.pem ubuntu@50.18.170.151
+ssh -i ~/Downloads/<EC2_KEY>.pem ubuntu@<EC2_IP>
 ```
 
 ---
@@ -54,7 +54,7 @@ curl -X POST https://api.hydenluc.com/v1/admin/cleanup \
 ## 部署回滚（手动）
 
 ```bash
-ssh -i ~/Downloads/CultureEscrow-EC2.pem ubuntu@50.18.170.151
+ssh -i ~/Downloads/<EC2_KEY>.pem ubuntu@<EC2_IP>
 cd /opt/services/culture-escrow-pg17
 git log --oneline -10        # 确认目标 commit
 git checkout <commit-sha>

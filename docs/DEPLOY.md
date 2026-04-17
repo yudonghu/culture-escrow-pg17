@@ -1,7 +1,7 @@
 # 部署指南
 
 ## 生产环境信息
-- Host: Ubuntu EC2（IP: 50.18.170.151，用户: ubuntu，key: ~/Downloads/CultureEscrow-EC2.pem）
+- Host: Ubuntu EC2（用户: ubuntu，key: `<EC2_KEY>.pem`）
 - 部署路径: `/opt/services/culture-escrow-pg17/`
 - systemd 服务: `pg17`（端口 8787）
 - 反向代理: Caddy
