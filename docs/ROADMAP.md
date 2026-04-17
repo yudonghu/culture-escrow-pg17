@@ -45,9 +45,22 @@
 - EC2 部署、Web UI 改版、结构优化
 
 ### Phase 3 — 待实施
+
+#### 近期（改动小，优先做）
+- [ ] PR 时自动跑测试（GitHub Actions test workflow，merge 前验证）
+- [ ] Makefile（`make run` / `make test` / `make deploy` 统一入口）
+- [ ] `/health` 返回版本号（commit sha）和 uptime
+
+#### 运维
+- [ ] 审计日志自动轮转（logrotate，防止无限增长）
+- [ ] 自动清理 cron job（定期触发 retention cleanup，替代手动）
+
+#### 基础设施
 - [ ] 监控告警（连续失败、响应超时、磁盘异常）
 - [ ] 版本化发布（tag）+ 回滚机制
 - [ ] staging 环境独立部署 + 压测
+
+#### 较大改动
 - [ ] 异步任务队列（当前同步处理在引擎慢时可能超时）
 - [ ] Redis 幂等存储（多实例扩容）
 - [ ] 多租户权限体系
