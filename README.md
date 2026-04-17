@@ -20,24 +20,15 @@ tests/         42 pytest integration tests
 ## Local quick start
 
 ```bash
-# 1. Clone and enter repo
 git clone <repo-url> && cd culture-escrow-pg17
-
-# 2. Create virtualenv and install deps
-python3 -m venv .venv && source .venv/bin/activate
-pip install -r apps/api/requirements.txt
-
-# 3. Copy example env
-cp .env.example .env
-# Fill in PG17_API_TOKEN (any string works locally)
-
-# 4. Run the API
-./deploy/scripts/run_api.sh
+cp .env.example .env        # fill in PG17_API_TOKEN (any string works locally)
+make install                # create .venv and install all deps
+make run                    # start API at http://127.0.0.1:8787
+make web                    # serve web UI at http://127.0.0.1:8788 (separate terminal)
+make test                   # run 42 tests
 ```
 
-Web UI: open `apps/web/index.html` in a browser (or serve with any static server).
-
-Detailed runbook: `docs/09-运维/LOCAL_DEMO_RUNBOOK.md`
+Detailed runbook: `docs/RUNBOOK.md`
 
 ## Engine dependencies (real PDF fill)
 
