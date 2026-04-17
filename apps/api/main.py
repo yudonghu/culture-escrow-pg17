@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 import collections
 import logging
 import os
+import subprocess
 import tempfile
 import threading
 import time
@@ -30,6 +31,32 @@ from fastapi.responses import FileResponse, JSONResponse
 from pg17_service import FillFields, IdempotencyConflictError, PG17Service, PG17ServiceError
 
 app = FastAPI(title="culture-escrow-pg17 API", version="0.2.2")
+
+# ── Service start time & version ──────────────────────────────────────────────
+
+_START_TIME = time.time()
+
+
+def _git_commit_sha() -> str:
+    """Return short git commit sha, or env var GIT_COMMIT, or 'unknown'."""
+    sha = os.getenv("GIT_COMMIT", "").strip()
+    if sha:
+        return sha[:7]
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            capture_output=True, text=True,
+            cwd=Path(__file__).resolve().parents[2],
+            timeout=2,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except Exception:
+        pass
+    return "unknown"
+
+
+_VERSION_SHA = _git_commit_sha()
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
 
@@ -160,6 +187,8 @@ def health(request: Request):
         "ok": ok,
         "request_id": request.state.request_id,
         "service": "culture-escrow-pg17-api",
+        "version": _VERSION_SHA,
+        "uptime_seconds": int(time.time() - _START_TIME),
         "auth_enabled": bool(API_TOKEN),
         "audit_log_path": str(service.audit_log_path),
         "retention_days": RETENTION_DAYS,
