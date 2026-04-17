@@ -270,24 +270,40 @@
       msg.textContent = 'Filling in your PDF, please wait…';
       resultBody.innerHTML = '';
 
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 60000);
+
       try {
         const fd = new FormData(form);
-        const r = await fetch(`${API_BASE}/v1/pg17/fill`, { method: 'POST', body: fd });
+        const r = await fetch(`${API_BASE}/v1/pg17/fill`, { method: 'POST', body: fd, signal: controller.signal });
+        clearTimeout(timer);
         const j = await r.json();
 
         if (!r.ok) {
           msg.className = 'status-failed';
-          msg.textContent = '✕ Fill failed.';
-          const hint = (j && j.hint) || (j && j.detail && j.detail.hint) || 'Please check your inputs and try again.';
-          resultBody.innerHTML = `<div class="error-hint">${hint}</div>`;
+          const errMap = {
+            401: '✕ Authentication failed. Please contact support.',
+            413: '✕ File too large. Please use a smaller PDF.',
+            422: '✕ Template mismatch. The PDF may not be a valid PG17 form.',
+            429: '✕ Too many requests. Please wait a moment and try again.',
+            500: '✕ Server error. The fill engine encountered a problem.',
+          };
+          msg.textContent = errMap[r.status] || `✕ Fill failed (${r.status}).`;
+          const hint = (j && j.hint) || (j && j.detail && j.detail.hint) || '';
+          resultBody.innerHTML = hint ? `<div class="error-hint">${hint}</div>` : '';
         } else {
           msg.className = 'status-success';
           msg.textContent = '✓ Done! Your PDF is ready.';
           resultBody.innerHTML = `<a class="download-link" href="${API_BASE}${j.output_file}" target="_blank">⬇ Download Completed PDF</a>`;
         }
       } catch (err) {
+        clearTimeout(timer);
         msg.className = 'status-failed';
-        msg.textContent = '✕ Network error. Please try again.';
+        if (err.name === 'AbortError') {
+          msg.textContent = '✕ Request timed out. The PDF fill is taking too long — please try again.';
+        } else {
+          msg.textContent = '✕ Cannot reach the server. Please check your connection and try again.';
+        }
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = 'Run Fill';
