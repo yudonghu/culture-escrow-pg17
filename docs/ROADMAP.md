@@ -54,7 +54,7 @@
 #### 近期（改动小，优先做）
 - [x] `.env.prod.example` 补全 CORS 配置（`portal.cultureescrow.com` 漏掉了）
 - [x] PR 时自动跑测试（GitHub Actions test workflow，merge 前验证）
-- [ ] Makefile（`make run` / `make test` / `make deploy` 统一入口）
+- [x] Makefile（`make install` / `make run` / `make test` / `make web`）
 - [ ] `/health` 返回版本号（commit sha）和 uptime
 
 #### 运维
