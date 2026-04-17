@@ -11,8 +11,8 @@
 - `apps/api/main.py`：HTTP 层（FastAPI，路由、认证、速率限制 20次/分钟/IP）
 - `apps/api/pg17_service.py`：业务逻辑层（PG17Service 类，PR #25 从 main.py 抽出）
 - `packages/pg17-fill-engine/pg17_engine.py`：引擎子进程调用包装
-- `tools/pg17-engine/fill_page17_real.py`：真实填写脚本（OCR + reportlab，生产使用）
-- `tools/pg17-engine/fill_page17_stub.py`：本地测试桩（测试/开发使用）
+- `packages/pg17-fill-engine/fill_page17_real.py`：真实填写脚本（OCR + reportlab，生产使用）
+- `packages/pg17-fill-engine/fill_page17_stub.py`：本地测试桩（测试/开发使用）
 
 ## 3. 流程
 1) 客户端上传 PDF + 参数（multipart/form-data）
@@ -32,3 +32,30 @@
 - 速率限制：20次/分钟/IP（内存滑动窗口）
 - 幂等存储：文件级 JSON store（`PG17_IDEMPOTENCY_STORE`）
 - 审计日志：JSONL 格式（`PG17_AUDIT_LOG_PATH`），敏感字段脱敏
+
+---
+
+## 6. Engine Runtime
+
+### 当前策略
+- 生产环境使用真实引擎：`packages/pg17-fill-engine/fill_page17_real.py`（OCR + reportlab）
+- 本地测试使用 stub：`packages/pg17-fill-engine/fill_page17_stub.py`
+- 通过环境变量控制：
+  - `PG17_ENGINE_PYTHON`：Python 解释器路径（生产默认 `python3`）
+  - `PG17_ENGINE_SCRIPT`：引擎脚本路径（生产为 `packages/pg17-fill-engine/fill_page17_real.py`）
+
+### 调用方式
+引擎以子进程方式调用，通过 `packages/pg17-fill-engine/pg17_engine.py` 封装：
+- stdout 读取 JSON 结果
+- 非零退出码视为引擎异常
+
+### 生产依赖（版本锁定，与 EC2 一致）
+- `pypdf`
+- `pymupdf`
+- `pillow`
+- `pytesseract`
+- `reportlab`
+- 系统依赖：`tesseract-ocr`
+
+### 本地测试
+测试套件（tests/）使用 stub engine，无需配置 `PG17_ENGINE_SCRIPT` 等生产变量。

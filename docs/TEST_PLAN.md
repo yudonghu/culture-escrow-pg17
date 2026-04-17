@@ -1,12 +1,13 @@
 # 测试计划
 
 ## 当前状态
-已有 42 个自动化测试（PR #26），位于 `tests/` 目录，使用 pytest。
+已有 42 个自动化测试，位于 `tests/` 目录，使用 pytest。
 
 ## 运行方式
 ```bash
 source .venv/bin/activate
-python -m pytest tests/ -v
+pip install -r requirements-dev.txt
+pytest
 ```
 
 - 本地测试使用 stub engine，不需要 `PG17_ESCROW_COMPANY` 等生产 PII 变量
