@@ -82,18 +82,20 @@ Auto-deploy on merge to `main`:
 
 Manual deploy: `ssh` to EC2 and run `deploy/scripts/deploy_prod.sh` directly.
 
-Full ops guide: `docs/09-运维/EC2_DEPLOY_RUNBOOK.md`
+Full ops guide: `docs/DEPLOY.md`
 
 ## Docs index
 
-| Folder | Contents |
+| File | Contents |
 |---|---|
-| `docs/01-产品` | Product spec, field mapping |
-| `docs/02-架构` | Architecture overview |
-| `docs/03-接口` | API reference |
-| `docs/04-数据` | Data models, audit log format |
-| `docs/05-安全` | Security controls |
-| `docs/06-部署` | Deployment & environment guides |
-| `docs/07-路线图` | Roadmap |
-| `docs/08-测试` | Test plan |
-| `docs/09-运维` | Local runbook, EC2 ops |
+| `docs/PRD.md` | Product spec, MVP scope, acceptance criteria |
+| `docs/ARCHITECTURE.md` | System layers, module boundaries, engine runtime |
+| `docs/API_SPEC.md` | API reference (auth, rate limiting, endpoints) |
+| `docs/DATA_MODEL.md` | Data models, audit log fields |
+| `docs/SECURITY.md` | Security controls |
+| `docs/ENVIRONMENTS.md` | Environment variables, staging/prod config |
+| `docs/DEPLOY.md` | EC2 deploy, GitHub Actions, self-hosted runner |
+| `docs/RUNBOOK.md` | Production ops + local dev guide |
+| `docs/OPERATIONS.md` | Audit log, idempotency, retention policy |
+| `docs/ROADMAP.md` | Completed phases + pending work |
+| `docs/TEST_PLAN.md` | Test plan (42 pytest tests) |
