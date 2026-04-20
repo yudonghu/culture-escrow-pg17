@@ -1,0 +1,4 @@
+# pg17 daily retention cleanup
+# Deletes output PDFs older than PG17_RETENTION_DAYS (default: 7 days)
+# Logs to /var/log/pg17/cleanup.log
+0 3 * * * ubuntu /opt/services/culture-escrow-pg17/deploy/scripts/pg17_cleanup.sh >> /var/log/pg17/cleanup.log 2>&1
