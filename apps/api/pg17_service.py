@@ -79,14 +79,36 @@ class PG17Service:
         retention_days: int,
         idempotency_ttl_seconds: int,
         idempotency_store_path: Path,
+        s3_bucket: Optional[str] = None,
+        s3_region: Optional[str] = None,
     ):
         self.output_dir = output_dir
         self.audit_log_path = audit_log_path
         self.retention_days = retention_days
         self.idempotency_ttl_seconds = idempotency_ttl_seconds
         self.idempotency_store_path = idempotency_store_path
+        self.s3_bucket = s3_bucket or ""
+        self.s3_region = s3_region or "us-east-1"
 
     # ── private helpers ───────────────────────────────────────────────────────
+
+    def _s3_key(self, escrow_number: str, job_id: str, ts: float) -> str:
+        """Build S3 object key: {escrow_number}_{job_id_short}_{timestamp}.pdf"""
+        safe_escrow = re.sub(r"[^A-Za-z0-9\-]", "_", escrow_number) if escrow_number else "unknown"
+        ts_str = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y%m%d-%H%M%S")
+        return f"{safe_escrow}_{job_id[:8]}_{ts_str}.pdf"
+
+    def _upload_to_s3(self, file_path: Path, s3_key: str) -> None:
+        """Upload a file to S3. Non-fatal — logs error but does not raise."""
+        if not self.s3_bucket:
+            return
+        try:
+            import boto3
+            s3 = boto3.client("s3", region_name=self.s3_region)
+            s3.upload_file(str(file_path), self.s3_bucket, s3_key)
+            logger.info("s3_upload_ok bucket=%s key=%s", self.s3_bucket, s3_key)
+        except Exception as e:
+            logger.error("s3_upload_failed bucket=%s key=%s error=%s", self.s3_bucket, s3_key, e)
 
     def _audit_log(self, event: dict) -> None:
         self.audit_log_path.parent.mkdir(parents=True, exist_ok=True)
@@ -242,9 +264,14 @@ class PG17Service:
             },
         })
 
+        # Upload to S3 for permanent storage (non-fatal)
+        now_ts = time.time()
+        s3_key = self._s3_key(fields.escrow_number, job_id, now_ts)
+        self._upload_to_s3(out_path, s3_key)
+
         if idem_key:
             idem_store[idem_key] = {
-                "ts": time.time(),
+                "ts": now_ts,
                 "status": "success",
                 "payload_hash": payload_hash,
                 "job_id": job_id,

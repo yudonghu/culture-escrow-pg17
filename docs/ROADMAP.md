@@ -28,6 +28,7 @@
 - [x] 修复生产 CORS 漏掉 `portal.cultureescrow.com`
 - [x] git 历史 PII 清除（`git filter-repo`）+ repo 改为 public
 - [x] Caddyfile 纳入版本控制（`deploy/caddy/Caddyfile.example`）
+- [x] S3 永久存储（生成的 PDF 上传至 S3，命名规则 `{escrow}_{job_id_short}_{timestamp}.pdf`，IAM role 鉴权，SSE-S3 加密，写入专用策略）
 
 **当前定位：生产上线，服务运行于 EC2，域名 portal.cultureescrow.com/pg17。**
 

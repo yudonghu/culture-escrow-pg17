@@ -65,6 +65,17 @@ cp deploy/environments/.env.prod.example .env.prod
 | `PG17_CORS_ORIGINS` | 允许的 origin（逗号分隔） | `http://127.0.0.1:8080,...` |
 | `PG17_RATE_LIMIT_PER_MINUTE` | 每 IP 每分钟请求上限（0 = 关闭） | 20 |
 
+### S3 永久存储（可选）
+| 变量 | 说明 | 默认值 |
+|---|---|---|
+| `PG17_S3_BUCKET` | S3 bucket 名称，空则禁用上传 | 空 |
+| `PG17_S3_REGION` | S3 bucket 所在区域 | `us-west-1` |
+
+> **鉴权方式**：EC2 IAM role（不存储 Access Key），要求 EC2 附加的 role 拥有对该 bucket 的 `s3:PutObject` 权限。  
+> **加密**：SSE-S3（AWS 托管密钥，默认开启，无需配置）。  
+> **命名规则**：`{escrow_number}_{job_id_short}_{YYYYMMDD-HHMMSS}.pdf`。  
+> **失败不阻断**：S3 上传失败只记录日志，不影响主流程返回。
+
 ---
 
 ## 各环境差异
@@ -96,7 +107,9 @@ PG17_ENGINE_SCRIPT=packages/pg17-fill-engine/fill_page17_real.py
 PG17_IDEMPOTENCY_TTL_SECONDS=7200
 PG17_AUDIT_LOG_PATH=/var/log/pg17/prod-audit.log.jsonl
 PG17_IDEMPOTENCY_STORE=/var/lib/pg17/prod-idempotency.json
-PG17_CORS_ORIGINS=https://app.hydenluc.com
+PG17_CORS_ORIGINS=https://portal.cultureescrow.com,https://app.hydenluc.com
+PG17_S3_BUCKET=culture-escrow-pg17-outputs
+PG17_S3_REGION=us-west-1
 # PII 变量需要填入
 ```
 
