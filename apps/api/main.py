@@ -98,6 +98,8 @@ service = PG17Service(
     retention_days=RETENTION_DAYS,
     idempotency_ttl_seconds=IDEMPOTENCY_TTL_SECONDS,
     idempotency_store_path=Path(os.getenv("PG17_IDEMPOTENCY_STORE", str(OUTPUT_DIR / "idempotency_store.json"))),
+    s3_bucket=os.getenv("PG17_S3_BUCKET", ""),
+    s3_region=os.getenv("PG17_S3_REGION", "us-west-1"),
 )
 
 # ── Rate limiter ──────────────────────────────────────────────────────────────
