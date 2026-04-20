@@ -60,7 +60,7 @@
 
 #### 运维
 - [x] 审计日志自动轮转（logrotate，防止无限增长）
-- [ ] 自动清理 cron job（定期触发 retention cleanup，替代手动）
+- [x] 自动清理 cron job（定期触发 retention cleanup，替代手动）
 
 #### 基础设施
 - [ ] 监控告警（连续失败、响应超时、磁盘异常）
