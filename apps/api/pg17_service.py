@@ -93,10 +93,10 @@ class PG17Service:
     # ── private helpers ───────────────────────────────────────────────────────
 
     def _s3_key(self, escrow_number: str, job_id: str, ts: float) -> str:
-        """Build S3 object key: {escrow_number}_{job_id_short}_{timestamp}.pdf"""
+        """Build S3 object key: {escrow_number}_{timestamp}_{job_id_short}.pdf"""
         safe_escrow = re.sub(r"[^A-Za-z0-9\-]", "_", escrow_number) if escrow_number else "unknown"
         ts_str = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y%m%d-%H%M%S")
-        return f"{safe_escrow}_{job_id[:8]}_{ts_str}.pdf"
+        return f"{safe_escrow}_{ts_str}_{job_id[:8]}.pdf"
 
     def _upload_to_s3(self, file_path: Path, s3_key: str) -> None:
         """Upload a file to S3. Non-fatal — logs error but does not raise."""
