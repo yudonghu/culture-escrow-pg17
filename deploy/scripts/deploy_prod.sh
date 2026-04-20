@@ -2,12 +2,17 @@
 set -euo pipefail
 
 ROOT="${1:-/opt/services/culture-escrow-pg17}"
+REF="${2:-main}"
 cd "$ROOT"
 
-echo "[1/8] Fetch latest main"
+echo "[1/8] Fetch and checkout $REF"
 git fetch origin
-git checkout main
-git pull --ff-only origin main
+if [ "$REF" = "main" ]; then
+    git checkout main
+    git pull --ff-only origin main
+else
+    git checkout "$REF"
+fi
 
 echo "[2/8] Ensure venv"
 python3 -m venv .venv || true

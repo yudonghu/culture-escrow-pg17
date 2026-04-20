@@ -128,6 +128,34 @@ Runner 标签：`self-hosted`, `linux`, `x64`, `pg17-prod`
 
 ---
 
+## 版本化发布（tag）
+
+每次上线重要功能时，在 main 上打一个语义化版本 tag：
+
+```bash
+# 在本地 main 分支上执行
+./deploy/scripts/tag_release.sh v1.0.0 "S3 permanent storage + cleanup cron"
+```
+
+格式要求：`vMAJOR.MINOR.PATCH`（e.g. `v1.0.0`）
+
+tag 推送到 GitHub 后可在 Releases 页面查看历史版本。
+
+---
+
+## 回滚
+
+出现问题时，SSH 到 EC2 执行：
+
+```bash
+ssh -i <EC2_KEY>.pem ubuntu@<EC2_IP>
+bash /opt/services/culture-escrow-pg17/deploy/scripts/rollback_prod.sh v1.0.0
+```
+
+回滚脚本内部调用 `deploy_prod.sh` 并指定 tag，流程与正常部署完全一致（install deps → restart → health check）。
+
+---
+
 ## 验证
 
 ```bash
