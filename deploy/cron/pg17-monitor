@@ -1,0 +1,3 @@
+# pg17 health monitor — runs every 5 minutes
+# Alerts hydenluc@gmail.com on 3 consecutive failures or disk < 2GB
+*/5 * * * * ubuntu /opt/services/culture-escrow-pg17/.venv/bin/python3 /opt/services/culture-escrow-pg17/deploy/scripts/pg17_monitor.py >> /var/log/pg17/monitor.log 2>&1
