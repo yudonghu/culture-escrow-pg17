@@ -3,12 +3,16 @@ Description=Culture Escrow PG17 API — staging
 After=network.target
 
 [Service]
+Type=simple
 User=ubuntu
 WorkingDirectory=/opt/services/culture-escrow-pg17
 EnvironmentFile=/opt/services/culture-escrow-pg17/.env.staging
-ExecStart=/opt/services/culture-escrow-pg17/.venv/bin/uvicorn apps.api.main:app --host 0.0.0.0 --port 8789
+Environment=PYTHONPATH=/opt/services/culture-escrow-pg17/packages/pg17-fill-engine
+ExecStart=/opt/services/culture-escrow-pg17/.venv/bin/uvicorn apps.api.main:app --host 0.0.0.0 --port 8789 --log-level info
 Restart=always
-RestartSec=5
+RestartSec=3
+StandardOutput=append:/var/log/pg17/staging.out.log
+StandardError=append:/var/log/pg17/staging.err.log
 
 [Install]
 WantedBy=multi-user.target

@@ -35,7 +35,12 @@
 
 # --- pg17 API (staging) ---
 # pg17.staging.hydenluc.com → port 8789
+# Protected by basic_auth — only for internal use
 
 pg17.staging.hydenluc.com {
+  basic_auth {
+    # Generate hash: caddy hash-password --plaintext 'your-password'
+    <USERNAME> <BCRYPT_HASH>
+  }
   reverse_proxy 127.0.0.1:8789
 }
