@@ -50,6 +50,9 @@ def fill_page17(
     escrow_number: str = '',
     acceptance_date: str = '',
     second_date: str = '',
+    by_name: str = '',
+    address: str = '',
+    phone: str = '',
 ):
     script = _engine_script()
     python_bin = _engine_python()
@@ -79,7 +82,17 @@ def fill_page17(
     if second_date:
         cmd += ['--second-date', second_date]
 
-    p = subprocess.run(cmd, capture_output=True, text=True)
+    # 将 officer/branch 信息通过 env override 注入子进程
+    # 引擎脚本直接从环境变量读取这些值，无需修改引擎脚本
+    env = os.environ.copy()
+    if by_name:
+        env['PG17_BY_NAME'] = by_name
+    if address:
+        env['PG17_ADDRESS'] = address
+    if phone:
+        env['PG17_PHONE'] = phone
+
+    p = subprocess.run(cmd, capture_output=True, text=True, env=env)
     if p.returncode != 0:
         raise RuntimeError(p.stderr or p.stdout or 'unknown error')
 

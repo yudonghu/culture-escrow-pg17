@@ -38,6 +38,9 @@ class FillFields:
     escrow_number: str = ""
     acceptance_date: str = ""
     second_date: str = ""
+    by_name: str = ""     # escrow officer 姓名（覆盖 PG17_BY_NAME）
+    address: str = ""     # branch 地址（覆盖 PG17_ADDRESS）
+    phone: str = ""       # branch 电话（覆盖 PG17_PHONE）
 
     def as_dict(self) -> dict:
         return {
@@ -46,6 +49,9 @@ class FillFields:
             "escrow_number": self.escrow_number,
             "acceptance_date": self.acceptance_date,
             "second_date": self.second_date,
+            "by_name": self.by_name,
+            "address": self.address,
+            "phone": self.phone,
         }
 
 
@@ -219,6 +225,9 @@ class PG17Service:
                 escrow_number=fields.escrow_number,
                 acceptance_date=fields.acceptance_date,
                 second_date=fields.second_date,
+                by_name=fields.by_name,
+                address=fields.address,
+                phone=fields.phone,
             )
         except Exception as e:
             engine_ms = (time.perf_counter() - t1) * 1000
