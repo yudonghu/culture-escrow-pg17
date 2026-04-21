@@ -416,6 +416,9 @@ async def pg17_fill(
     escrow_number: Optional[str] = Form(default=""),
     acceptance_date: Optional[str] = Form(default=""),
     second_date: Optional[str] = Form(default=""),
+    by_name: Optional[str] = Form(default=""),       # escrow officer 姓名，覆盖 PG17_BY_NAME
+    address: Optional[str] = Form(default=""),        # branch 地址，覆盖 PG17_ADDRESS
+    phone: Optional[str] = Form(default=""),          # branch 电话，覆盖 PG17_PHONE
     x_api_token: Optional[str] = Header(default=None),
     x_actor: Optional[str] = Header(default="unknown"),
     x_idempotency_key: Optional[str] = Header(default=None),
@@ -436,6 +439,10 @@ async def pg17_fill(
         escrow_number=(escrow_number or "").strip(),
         acceptance_date=(acceptance_date or "").strip(),
         second_date=(second_date or "").strip(),
+        # 前端传值优先；未传则 fallback 到 env var（引擎子进程会读系统环境变量）
+        by_name=(by_name or "").strip(),
+        address=(address or "").strip(),
+        phone=(phone or "").strip(),
     )
     errors = service.validate_fields(fields)
     if errors:

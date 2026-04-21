@@ -132,6 +132,38 @@
       color: #7b2020;
     }
 
+    /* Select dropdown */
+    select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #d6d6d6;
+      border-radius: 10px;
+      box-sizing: border-box;
+      font-size: 14px;
+      color: #18212b;
+      background: white;
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%235a6470' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      cursor: pointer;
+    }
+    select:focus { outline: none; border-color: #b08a4a; box-shadow: 0 0 0 3px rgba(176,138,74,0.12); }
+
+    /* Branch info display */
+    .branch-info {
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: #f6f4ef;
+      border-radius: 10px;
+      border: 1px solid #e6dfd2;
+      font-size: 13px;
+      color: #5a6470;
+      display: none;
+    }
+    .branch-info.visible { display: block; }
+    .branch-info strong { color: #18212b; display: block; margin-bottom: 4px; }
+
     /* How to Use card */
     .steps { margin: 0; padding: 0; list-style: none; counter-reset: steps; }
     .steps li {
@@ -190,8 +222,41 @@
           </div>
         </div>
 
+        <!-- Officer + Branch 联动选择 -->
+        <div class="grid" style="margin-bottom: 16px;">
+          <div>
+            <label for="officer-select">Escrow Officer</label>
+            <select id="officer-select">
+              <option value="">— Select Officer —</option>
+              <option value="Kevin Hsu">Kevin Hsu</option>
+              <option value="Vickie Hua">Vickie Hua</option>
+              <option value="Wendy Hwang">Wendy Hwang</option>
+            </select>
+          </div>
+          <div>
+            <label for="branch-select">Branch</label>
+            <select id="branch-select">
+              <option value="">— Select Branch —</option>
+              <option value="San Marino">San Marino</option>
+              <option value="Irvine">Irvine</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Branch 地址/电话 展示（只读，随选择自动更新） -->
+        <div class="branch-info" id="branch-info">
+          <strong id="branch-info-name"></strong>
+          <span id="branch-info-address"></span><br>
+          <span id="branch-info-phone"></span>
+        </div>
+
+        <!-- 隐藏字段，提交给后端 -->
+        <input type="hidden" name="by_name" id="field-by-name">
+        <input type="hidden" name="address" id="field-address">
+        <input type="hidden" name="phone" id="field-phone">
+
         <!-- 5 fields in responsive grid -->
-        <div class="grid">
+        <div class="grid" style="margin-top: 16px;">
           <div>
             <label>Deposit Amount</label>
             <input name="deposit_amount" placeholder="ex: 266,400.00">
@@ -242,6 +307,70 @@
   </div>
 
   <script>
+    // ── Officer / Branch 配置 ──────────────────────────────────────────
+    const BRANCHES = {
+      'San Marino': {
+        address: '2060 Huntington Dr. #3, San Marino, CA 91108',
+        phone: '626-308-3088',
+      },
+      'Irvine': {
+        address: '4656 Barranca Parkway, Irvine, CA 92604',
+        phone: '949-551-2500',
+      },
+    };
+
+    const OFFICERS = {
+      'Kevin Hsu':   'San Marino',
+      'Vickie Hua':  'San Marino',
+      'Wendy Hwang': 'Irvine',
+    };
+
+    const officerSel   = document.getElementById('officer-select');
+    const branchSel    = document.getElementById('branch-select');
+    const branchInfo   = document.getElementById('branch-info');
+    const infoName     = document.getElementById('branch-info-name');
+    const infoAddress  = document.getElementById('branch-info-address');
+    const infoPhone    = document.getElementById('branch-info-phone');
+    const fieldByName  = document.getElementById('field-by-name');
+    const fieldAddress = document.getElementById('field-address');
+    const fieldPhone   = document.getElementById('field-phone');
+
+    function applyBranch(branchName) {
+      const b = BRANCHES[branchName];
+      if (!b) { branchInfo.classList.remove('visible'); return; }
+      infoName.textContent    = branchName;
+      infoAddress.textContent = b.address;
+      infoPhone.textContent   = b.phone;
+      fieldAddress.value      = b.address;
+      fieldPhone.value        = b.phone;
+      branchInfo.classList.add('visible');
+    }
+
+    // 选 Officer → Branch 自动切换 + 地址/电话填充
+    officerSel.addEventListener('change', () => {
+      const officer = officerSel.value;
+      fieldByName.value = officer;
+      if (officer && OFFICERS[officer]) {
+        branchSel.value = OFFICERS[officer];
+        applyBranch(OFFICERS[officer]);
+      } else {
+        branchSel.value = '';
+        branchInfo.classList.remove('visible');
+        fieldAddress.value = '';
+        fieldPhone.value = '';
+      }
+    });
+
+    // 选 Branch → 只更新地址/电话，Officer 下拉不变
+    branchSel.addEventListener('change', () => {
+      applyBranch(branchSel.value);
+      if (!branchSel.value) {
+        fieldAddress.value = '';
+        fieldPhone.value = '';
+      }
+    });
+
+    // ── API ──────────────────────────────────────────────────────────
     const API_BASE = 'https://api.hydenluc.com';
     const form = document.getElementById('f');
     const submitBtn = document.getElementById('submit-btn');
