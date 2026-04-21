@@ -128,6 +128,70 @@ Runner 标签：`self-hosted`, `linux`, `x64`, `pg17-prod`
 
 ---
 
+## Staging 环境
+
+### 域名与端口
+- URL：`https://pg17.staging.hydenluc.com`
+- 端口：`8789`（与生产 8787 隔离）
+- systemd 服务：`pg17-staging`
+
+### 首次搭建步骤
+
+1. **DNS**：添加 A 记录 `pg17.staging.hydenluc.com → <EC2_IP>`
+   （或 wildcard `*.staging.hydenluc.com → <EC2_IP>` 方便以后扩展）
+
+2. **创建 env 文件**（SSH 到 EC2）：
+   ```bash
+   cp deploy/environments/.env.staging.example .env.staging
+   # 填入 PG17_API_TOKEN、PII 变量等
+   ```
+
+3. **安装 systemd service**：
+   ```bash
+   sudo cp deploy/systemd/pg17-staging.service /etc/systemd/system/
+   sudo systemctl daemon-reload
+   sudo systemctl enable pg17-staging
+   sudo systemctl start pg17-staging
+   ```
+
+4. **更新 Caddy**（参考 `deploy/caddy/Caddyfile.example` staging 块）：
+   ```
+   pg17.staging.hydenluc.com {
+     reverse_proxy 127.0.0.1:8789
+   }
+   ```
+   ```bash
+   sudo caddy validate --config /etc/caddy/Caddyfile
+   sudo systemctl reload caddy
+   ```
+
+### 日常部署到 staging
+
+```bash
+# 部署 main
+bash deploy/scripts/deploy_staging.sh
+
+# 部署指定分支
+bash deploy/scripts/deploy_staging.sh /opt/services/culture-escrow-pg17 feat/my-feature
+
+# 部署指定 tag
+bash deploy/scripts/deploy_staging.sh /opt/services/culture-escrow-pg17 v1.0.0
+```
+
+### Staging vs Prod 差异
+
+| 项目 | Staging | Prod |
+|---|---|---|
+| 端口 | 8789 | 8787 |
+| env 文件 | `.env.staging` | `.env.prod` |
+| 留存天数 | 3 天 | 7 天 |
+| S3 上传 | 禁用 | 启用 |
+| 日志级别 | info | warning |
+| cleanup cron | 无 | 有 |
+| 监控告警 | 无 | 有 |
+
+---
+
 ## 版本化发布（tag）
 
 每次上线重要功能时，在 main 上打一个语义化版本 tag：

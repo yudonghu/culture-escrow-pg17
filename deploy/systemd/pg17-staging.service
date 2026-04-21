@@ -1,0 +1,14 @@
+[Unit]
+Description=Culture Escrow PG17 API — staging
+After=network.target
+
+[Service]
+User=ubuntu
+WorkingDirectory=/opt/services/culture-escrow-pg17
+EnvironmentFile=/opt/services/culture-escrow-pg17/.env.staging
+ExecStart=/opt/services/culture-escrow-pg17/.venv/bin/uvicorn apps.api.main:app --host 0.0.0.0 --port 8789
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

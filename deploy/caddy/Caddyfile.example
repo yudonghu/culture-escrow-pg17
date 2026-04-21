@@ -26,9 +26,16 @@
   # ... other services on this domain go here ...
 }
 
-# --- pg17 API ---
+# --- pg17 API (production) ---
 # Reverse-proxies HTTPS traffic to the local uvicorn process
 
 <YOUR_API_DOMAIN> {
   reverse_proxy 127.0.0.1:8787
+}
+
+# --- pg17 API (staging) ---
+# pg17.staging.hydenluc.com → port 8789
+
+pg17.staging.hydenluc.com {
+  reverse_proxy 127.0.0.1:8789
 }
