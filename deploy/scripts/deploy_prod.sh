@@ -28,10 +28,12 @@ echo "[5/8] Sync web static files"
 sudo mkdir -p /var/www/pg17-web
 sudo cp "$ROOT/apps/web/index.html" /var/www/pg17-web/index.html
 
-echo "[6/8] Install cron job"
+echo "[6/8] Install cron jobs"
 sudo cp "$ROOT/deploy/cron/pg17-cleanup" /etc/cron.d/pg17-cleanup
 sudo chmod 644 /etc/cron.d/pg17-cleanup
 sudo chmod +x "$ROOT/deploy/scripts/pg17_cleanup.sh"
+sudo cp "$ROOT/deploy/cron/pg17-monitor" /etc/cron.d/pg17-monitor
+sudo chmod 644 /etc/cron.d/pg17-monitor
 
 echo "[7/8] Restart service"
 sudo systemctl restart pg17

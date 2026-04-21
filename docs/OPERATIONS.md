@@ -82,3 +82,36 @@
 - `scanned`
 - `deleted`
 - `ts`（timestamp）
+
+---
+
+## 4. 监控告警
+
+### 机制
+每 5 分钟 cron 调用 `deploy/scripts/pg17_monitor.py`，检查：
+- `/health` 端点可达性与 `ok` 状态
+- 磁盘可用空间（阈值 `PG17_DISK_WARN_GB`，默认 2.0 GB）
+
+### 告警策略
+- 连续 `PG17_MONITOR_FAIL_THRESHOLD`（默认 3）次失败后发送告警邮件
+- 服务恢复后发送恢复通知
+- 状态持久化到 `PG17_MONITOR_STATE_FILE`，避免重复告警
+
+### 告警目标
+- 收件人：`PG17_ALERT_EMAIL`（默认 `hydenluc@gmail.com`）
+- 发送方式：Gmail SMTP（需配置 `PG17_ALERT_SMTP_*` 变量）
+
+### 所需环境变量
+| 变量 | 说明 |
+|---|---|
+| `PG17_ALERT_EMAIL` | 告警收件人 |
+| `PG17_ALERT_SMTP_USER` | Gmail 账户地址 |
+| `PG17_ALERT_SMTP_PASSWORD` | Gmail App Password（非账户密码） |
+| `PG17_DISK_WARN_GB` | 磁盘告警阈值（默认 `2.0`） |
+| `PG17_MONITOR_FAIL_THRESHOLD` | 触发告警的连续失败次数（默认 `3`） |
+
+### Gmail App Password 获取方式
+Gmail → 账号设置 → 安全性 → 两步验证 → 应用专用密码 → 生成
+
+### 日志
+监控结果追加至 `/var/log/pg17/monitor.log`（已被 logrotate 管理）
