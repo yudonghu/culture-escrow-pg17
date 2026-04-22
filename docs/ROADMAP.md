@@ -1,6 +1,6 @@
 # 路线图
 
-更新时间：2026-04-16
+更新时间：2026-04-22
 
 ---
 
@@ -29,6 +29,12 @@
 - [x] git 历史 PII 清除（`git filter-repo`）+ repo 改为 public
 - [x] Caddyfile 纳入版本控制（`deploy/caddy/Caddyfile.example`）
 - [x] S3 永久存储（生成的 PDF 上传至 S3，命名规则 `{escrow}_{job_id_short}_{timestamp}.pdf`，IAM role 鉴权，SSE-S3 加密，写入专用策略）
+- [x] 自动清理 cron job（定期触发 retention cleanup）
+- [x] 监控告警（pg17_monitor.py，每 5 分钟，连续 3 次失败触发 Gmail 邮件）
+- [x] 版本化发布（tag v1.0.0）+ 回滚机制（deploy_prod.sh REF 参数）
+- [x] Staging 环境（pg17.staging.hydenluc.com，basic_auth 保护，独立 systemd）
+- [x] `/health` HTML 状态页（Accept: text/html 返回可读界面）
+- [x] 多 Officer / 多 Branch 支持（Kevin Hsu / Vickie Hua / Wendy Hwang，San Marino / Irvine）
 
 **当前定位：生产上线，服务运行于 EC2，域名 portal.cultureescrow.com/pg17。**
 
@@ -68,7 +74,7 @@
 - [x] staging 环境独立部署（pg17.staging.hydenluc.com，port 8789，独立 systemd + env）
 
 #### 业务功能
-- [ ] 多 Officer / 多 Branch 支持（前端下拉选择 officer，自动联动 branch + 地址 + 电话）
+- [x] 多 Officer / 多 Branch 支持（前端下拉选择 officer，自动联动 branch + 地址 + 电话）
 
 #### 暂缓，按需实施
 > 当前用户规模（< 10 人，最多 2 人同时使用）无需以下功能，待业务增长后再评估。
@@ -87,7 +93,7 @@
 - [x] 幂等/重试机制已启用
 - [ ] staging 压测通过（待执行）
 - [ ] 回滚演练通过（待执行）
-- [ ] 监控告警在线（待实施）
+- [x] 监控告警在线（pg17_monitor.py，每 5 分钟检测，连续 3 次失败触发 Gmail 邮件告警）
 
 ---
 
