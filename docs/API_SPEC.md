@@ -1,7 +1,7 @@
 # API 规范（当前生产版）
 
 ## 认证
-- Bearer token：请求头 `Authorization: Bearer <token>`（`PG17_API_TOKEN` 非空时启用）
+- 请求头 `x-api-token: <token>`（`PG17_API_TOKEN` 非空时启用）
 - `GET /health` 为公开接口，无需认证
 
 ## 速率限制
@@ -23,8 +23,11 @@
 - `deposit_amount` (optional)
 - `seller_agent_name` (optional)
 - `escrow_number` (optional)
-- `acceptance_date` (optional)
-- `second_date` (optional)
+- `acceptance_date` (optional)：格式 MM/DD/YYYY
+- `second_date` (optional)：格式 MM/DD/YYYY
+- `by_name` (optional)：Escrow Officer 姓名，覆盖 `PG17_BY_NAME`
+- `address` (optional)：Branch 地址，覆盖 `PG17_ADDRESS`
+- `phone` (optional)：Branch 电话，覆盖 `PG17_PHONE`
 
 ### Response（200）
 ```json
