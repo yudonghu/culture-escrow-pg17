@@ -351,7 +351,7 @@ def decide_overlay(data: FillData):
         "seller_agent": data.seller_agent,
         "escrow_number": data.escrow_number,
         "acceptance_date": data.acceptance_date,
-        "escrow_instruction_date": data.escrow_instruction_date,
+        # escrow_instruction_date is embedded inside subject_terms string — no separate coordinate needed
     }
     for k, v in variable_map.items():
         if v:
