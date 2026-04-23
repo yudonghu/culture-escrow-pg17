@@ -209,7 +209,8 @@ def locate_coords_by_anchors(source_pdf: str, page_index: int = 16, dpi: int = 3
     by_word = None
     phone = find_word(words, "phone", min_y=min_y)
     license_w = find_word(words, "license", min_y=min_y)
-    # Use "Financial" as anchor — unique to "Dept of Financial Protection and Innovation" (first checkbox)
+    # Use "Financial" as anchor — unique to "Dept of Financial Protection and Innovation" (first checkbox).
+    # x is fixed at left margin (checkbox square position); only y is derived from the anchor.
     dept = find_word(words, "financial", min_y=min_y) or find_word(words, "department", min_y=min_y)
     escrow_word = find_word(words, "escrow", min_y=min_y)
     date_w = find_word(words, "date", min_y=min_y)
@@ -282,7 +283,9 @@ def locate_coords_by_anchors(source_pdf: str, page_index: int = 16, dpi: int = 3
     if license_w:
         coords["license"] = img_to_pdf(license_w["x"] + license_w["w"] + 65, license_w["y"], license_w["h"], page_h, scale)
     if dept:
-        coords["checkbox_dfpi"] = img_to_pdf(dept["x"] - 12, dept["y"], dept["h"], page_h, scale)
+        # Derive y from anchor; x is fixed at PDF left-margin (37 pt) where the checkbox square sits.
+        _, y_pdf = img_to_pdf(dept["x"], dept["y"], dept["h"], page_h, scale)
+        coords["checkbox_dfpi"] = (37.0, y_pdf)
 
     debug["anchors_found"] = {
         "deposit": bool(deposit),
@@ -302,10 +305,27 @@ def locate_coords_by_anchors(source_pdf: str, page_index: int = 16, dpi: int = 3
     return coords, debug
 
 
+def _today_pst() -> str:
+    """Return today's date in PST/PDT as MM/DD/YYYY, with multiple fallbacks for compatibility."""
+    fmt = "%m/%d/%Y"
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.now(ZoneInfo("America/Los_Angeles")).strftime(fmt)
+    except Exception:
+        pass
+    try:
+        import pytz
+        return datetime.now(pytz.timezone("America/Los_Angeles")).strftime(fmt)
+    except Exception:
+        pass
+    # Last resort: UTC-8 (PST without DST awareness)
+    from datetime import timezone, timedelta
+    return datetime.now(timezone(timedelta(hours=-8))).strftime(fmt)
+
+
 def decide_overlay(data: FillData):
     # second_date auto-fills with today in PST if not provided manually
-    import zoneinfo
-    today_pst = datetime.now(zoneinfo.ZoneInfo("America/Los_Angeles")).strftime("%m/%d/%Y")
+    today_pst = _today_pst()
 
     # escrow_instruction_date is manual — no auto-fill
     instruction_date = data.escrow_instruction_date or ""
