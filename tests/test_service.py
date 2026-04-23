@@ -29,11 +29,12 @@ MOCK_SUMMARY = {
 
 class TestValidateFields:
     def test_valid_dates(self, svc):
-        fields = FillFields(acceptance_date="03/20/2026", second_date="04/01/2026")
+        fields = FillFields(acceptance_date="03/20/2026", escrow_instruction_date="04/01/2026")
         assert svc.validate_fields(fields) == []
 
     def test_empty_dates_are_ok(self, svc):
-        fields = FillFields(acceptance_date="", second_date="")
+        # second_date is auto-filled; escrow_instruction_date is optional
+        fields = FillFields(acceptance_date="", second_date="", escrow_instruction_date="")
         assert svc.validate_fields(fields) == []
 
     def test_invalid_acceptance_date(self, svc):
@@ -42,14 +43,20 @@ class TestValidateFields:
         assert len(errors) == 1
         assert "acceptance_date" in errors[0]
 
-    def test_invalid_second_date(self, svc):
-        fields = FillFields(second_date="bad-date")
+    def test_invalid_escrow_instruction_date(self, svc):
+        # escrow_instruction_date is validated only when provided
+        fields = FillFields(escrow_instruction_date="bad-date")
         errors = svc.validate_fields(fields)
         assert len(errors) == 1
-        assert "second_date" in errors[0]
+        assert "escrow_instruction_date" in errors[0]
+
+    def test_second_date_not_validated(self, svc):
+        # second_date is auto-filled PST — any value (including bad) is passed through without validation
+        fields = FillFields(second_date="bad-date")
+        assert svc.validate_fields(fields) == []
 
     def test_both_dates_invalid(self, svc):
-        fields = FillFields(acceptance_date="nope", second_date="also-nope")
+        fields = FillFields(acceptance_date="nope", escrow_instruction_date="also-nope")
         assert len(svc.validate_fields(fields)) == 2
 
 

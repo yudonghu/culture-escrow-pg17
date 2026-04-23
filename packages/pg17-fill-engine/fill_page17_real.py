@@ -31,7 +31,8 @@ class FillData:
     seller_agent: str | None = None
     escrow_number: str | None = None
     acceptance_date: str | None = None
-    second_date: str | None = None
+    second_date: str | None = None          # auto-filled with today PST if omitted
+    escrow_instruction_date: str | None = None  # manual — date on escrow instruction
 
 
 def _load_fixed() -> Dict[str, str]:
@@ -208,7 +209,8 @@ def locate_coords_by_anchors(source_pdf: str, page_index: int = 16, dpi: int = 3
     by_word = None
     phone = find_word(words, "phone", min_y=min_y)
     license_w = find_word(words, "license", min_y=min_y)
-    dept = find_word(words, "department", min_y=min_y)
+    # Use "Financial" as anchor — unique to "Dept of Financial Protection and Innovation" (first checkbox)
+    dept = find_word(words, "financial", min_y=min_y) or find_word(words, "department", min_y=min_y)
     escrow_word = find_word(words, "escrow", min_y=min_y)
     date_w = find_word(words, "date", min_y=min_y)
 
@@ -301,8 +303,13 @@ def locate_coords_by_anchors(source_pdf: str, page_index: int = 16, dpi: int = 3
 
 
 def decide_overlay(data: FillData):
-    today = datetime.now().strftime("%m/%d/%Y")
-    subject_line = f"subject to terms and conditions shown on Culture Escrow's escrow instruction dated {today}"
+    # second_date auto-fills with today in PST if not provided manually
+    import zoneinfo
+    today_pst = datetime.now(zoneinfo.ZoneInfo("America/Los_Angeles")).strftime("%m/%d/%Y")
+
+    # escrow_instruction_date is manual — no auto-fill
+    instruction_date = data.escrow_instruction_date or ""
+    subject_line = f"subject to terms and conditions shown on Culture Escrow's escrow instruction dated {instruction_date}"
 
     to_write = {
         "checkbox_deposit": "X",
@@ -314,6 +321,8 @@ def decide_overlay(data: FillData):
         "address": FIXED["address"],
         "phone": FIXED["phone"],
         "license": FIXED["license"],
+        # second_date always written: use provided value or today PST
+        "second_date": data.second_date or today_pst,
     }
     left_blank = []
 
@@ -322,7 +331,7 @@ def decide_overlay(data: FillData):
         "seller_agent": data.seller_agent,
         "escrow_number": data.escrow_number,
         "acceptance_date": data.acceptance_date,
-        "second_date": data.second_date,
+        "escrow_instruction_date": data.escrow_instruction_date,
     }
     for k, v in variable_map.items():
         if v:
@@ -425,7 +434,8 @@ def main():
     ap.add_argument("--seller-agent")
     ap.add_argument("--escrow-number")
     ap.add_argument("--acceptance-date")
-    ap.add_argument("--second-date")
+    ap.add_argument("--second-date", help="Date next to escrow officer signature; defaults to today PST")
+    ap.add_argument("--escrow-instruction-date", help="Date on Culture Escrow escrow instruction (manual)")
     ap.add_argument("--no-anchor-mode", action="store_true")
     args = ap.parse_args()
 
@@ -437,6 +447,7 @@ def main():
         escrow_number=args.escrow_number,
         acceptance_date=args.acceptance_date,
         second_date=args.second_date,
+        escrow_instruction_date=args.escrow_instruction_date,
     )
 
     filled_fields, left_blank, anchor_debug, used_coords = fill_pdf(
@@ -453,7 +464,8 @@ def main():
             "seller_agent_name": args.seller_agent,
             "escrow_number": args.escrow_number,
             "acceptance_date": args.acceptance_date,
-            "second_date": args.second_date,
+            "escrow_instruction_date": args.escrow_instruction_date,
+            # second_date omitted — auto-filled with today PST
         }.items()
         if not v
     ]
