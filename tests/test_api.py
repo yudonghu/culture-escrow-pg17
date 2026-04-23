@@ -70,14 +70,24 @@ class TestFillValidation:
         assert resp.status_code == 400
         assert resp.json()["error_code"] == "PG17_400_INVALID_DATE"
 
-    def test_invalid_second_date_returns_400(self, client):
+    def test_invalid_escrow_instruction_date_returns_400(self, client):
+        resp = client.post(
+            "/v1/pg17/fill",
+            files=_pdf_upload(),
+            data={"escrow_instruction_date": "bad"},
+        )
+        assert resp.status_code == 400
+        assert resp.json()["error_code"] == "PG17_400_INVALID_DATE"
+
+    def test_invalid_second_date_is_ignored(self, client):
+        # second_date is auto-filled — bad value is passed through, not validated
         resp = client.post(
             "/v1/pg17/fill",
             files=_pdf_upload(),
             data={"second_date": "bad"},
         )
-        assert resp.status_code == 400
-        assert resp.json()["error_code"] == "PG17_400_INVALID_DATE"
+        # Should NOT return 400 for second_date
+        assert resp.status_code != 400 or resp.json().get("error_code") != "PG17_400_INVALID_DATE"
 
 
 # ── /v1/pg17/fill — success ───────────────────────────────────────────────────

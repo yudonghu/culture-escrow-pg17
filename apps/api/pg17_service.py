@@ -37,7 +37,8 @@ class FillFields:
     seller_agent_name: str = ""
     escrow_number: str = ""
     acceptance_date: str = ""
-    second_date: str = ""
+    second_date: str = ""              # auto-filled with today PST if blank
+    escrow_instruction_date: str = ""  # manual — date on escrow instruction
     by_name: str = ""     # escrow officer 姓名（覆盖 PG17_BY_NAME）
     address: str = ""     # branch 地址（覆盖 PG17_ADDRESS）
     phone: str = ""       # branch 电话（覆盖 PG17_PHONE）
@@ -49,6 +50,7 @@ class FillFields:
             "escrow_number": self.escrow_number,
             "acceptance_date": self.acceptance_date,
             "second_date": self.second_date,
+            "escrow_instruction_date": self.escrow_instruction_date,
             "by_name": self.by_name,
             "address": self.address,
             "phone": self.phone,
@@ -172,9 +174,14 @@ class PG17Service:
     def validate_fields(self, fields: FillFields) -> list[str]:
         """Return validation error messages. Empty list means all valid."""
         errors = []
-        for name in ("acceptance_date", "second_date"):
+        # second_date is auto-filled PST; only validate acceptance_date and escrow_instruction_date if provided
+        for name in ("acceptance_date",):
             val = getattr(fields, name)
             if not self._valid_date(val):
+                errors.append(f"{name} must be MM/DD/YYYY (got: {val!r})")
+        for name in ("escrow_instruction_date",):
+            val = getattr(fields, name)
+            if val and not self._valid_date(val):
                 errors.append(f"{name} must be MM/DD/YYYY (got: {val!r})")
         return errors
 
@@ -225,6 +232,7 @@ class PG17Service:
                 escrow_number=fields.escrow_number,
                 acceptance_date=fields.acceptance_date,
                 second_date=fields.second_date,
+                escrow_instruction_date=fields.escrow_instruction_date,
                 by_name=fields.by_name,
                 address=fields.address,
                 phone=fields.phone,
@@ -241,7 +249,7 @@ class PG17Service:
                 "inputs": {
                     "escrow_number": self._mask_value(fields.escrow_number),
                     "acceptance_date": "[redacted]",
-                    "second_date": "[redacted]",
+                    "escrow_instruction_date": "[redacted]",
                 },
                 "error_code": "PG17_500_ENGINE_FAILED",
                 "error": "engine processing failed",
@@ -263,7 +271,7 @@ class PG17Service:
             "inputs": {
                 "escrow_number": self._mask_value(fields.escrow_number),
                 "acceptance_date": "[redacted]",
-                "second_date": "[redacted]",
+                "escrow_instruction_date": "[redacted]",
             },
             "timings_ms": timings,
             "result": {
