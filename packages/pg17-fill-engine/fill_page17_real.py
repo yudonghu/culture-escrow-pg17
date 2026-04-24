@@ -90,7 +90,7 @@ FIELD_OFFSETS: Dict[str, Tuple[float, float]] = {
     "checkbox_dfpi": (6, -6),   # shifted right ~12pt so X lands inside the checkbox square
     "deposit_amount": (19, -6),
     "counter_offer_numbers": (1, -3),    # right 1 char (+6pt) from previous -5
-    "buyer_counter_offer":   (-134, -3), # right 5 chars (+30pt) from previous -164
+    "buyer_counter_offer":   (-128, -3), # right 1 char (+6pt) from previous -134
     "seller_agent": (48, -4),
     "escrow_company": (54, -4),
     "by_name": (20, -5),
