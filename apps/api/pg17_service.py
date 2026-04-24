@@ -39,6 +39,8 @@ class FillFields:
     acceptance_date: str = ""
     second_date: str = ""              # auto-filled with today PST if blank
     escrow_instruction_date: str = ""  # manual — date on escrow instruction
+    counter_offer_numbers: str = ""    # seller counter offer (user input)
+    buyer_counter_offer: str = ""      # buyer counter offer
     by_name: str = ""     # escrow officer 姓名（覆盖 PG17_BY_NAME）
     address: str = ""     # branch 地址（覆盖 PG17_ADDRESS）
     phone: str = ""       # branch 电话（覆盖 PG17_PHONE）
@@ -233,6 +235,8 @@ class PG17Service:
                 acceptance_date=fields.acceptance_date,
                 second_date=fields.second_date,
                 escrow_instruction_date=fields.escrow_instruction_date,
+                counter_offer_numbers=fields.counter_offer_numbers,
+                buyer_counter_offer=fields.buyer_counter_offer,
                 by_name=fields.by_name,
                 address=fields.address,
                 phone=fields.phone,

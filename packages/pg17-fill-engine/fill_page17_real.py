@@ -31,8 +31,10 @@ class FillData:
     seller_agent: str | None = None
     escrow_number: str | None = None
     acceptance_date: str | None = None
-    second_date: str | None = None          # auto-filled with today PST if omitted
-    escrow_instruction_date: str | None = None  # manual — date on escrow instruction
+    second_date: str | None = None               # auto-filled with today PST if omitted
+    escrow_instruction_date: str | None = None   # manual — date on escrow instruction
+    counter_offer_numbers: str | None = None     # seller counter offer (was fixed "one")
+    buyer_counter_offer: str | None = None       # buyer counter offer (new field)
 
 
 def _load_fixed() -> Dict[str, str]:
@@ -68,6 +70,7 @@ FALLBACK_COORDS: Dict[str, Tuple[float, float]] = {
     "checkbox_deposit": (353, 351),
     "deposit_amount": (465, 350),
     "counter_offer_numbers": (105, 342),
+    "buyer_counter_offer":   (355, 342),
     "seller_agent": (150, 316),
     "escrow_company": (105, 303),
     "by_name": (72, 290),
@@ -87,6 +90,7 @@ FIELD_OFFSETS: Dict[str, Tuple[float, float]] = {
     "checkbox_dfpi": (6, -6),   # shifted right ~12pt so X lands inside the checkbox square
     "deposit_amount": (19, -6),
     "counter_offer_numbers": (25, -3),
+    "buyer_counter_offer":   (10, -3),
     "seller_agent": (48, -4),
     "escrow_company": (54, -4),
     "by_name": (20, -5),
@@ -226,6 +230,12 @@ def locate_coords_by_anchors(source_pdf: str, page_index: int = 16, dpi: int = 3
         coords["deposit_amount"] = img_to_pdf(amount["x"] + amount["w"] + 18, amount["y"], amount["h"], page_h, scale)
     if numbers:
         coords["counter_offer_numbers"] = img_to_pdf(numbers["x"] + numbers["w"] + 10, numbers["y"], numbers["h"], page_h, scale)
+        # buyer_counter_offer: "and ___" on same line, find "and" to the right of "numbers"
+        and_words = [w for w in words if w["lower"] == "and" and abs(w["y"] - numbers["y"]) <= 12 and w["x"] > numbers["x"]]
+        if and_words:
+            and_words.sort(key=lambda w: w["x"])
+            aw = and_words[0]
+            coords["buyer_counter_offer"] = img_to_pdf(aw["x"] + aw["w"] + 8, aw["y"], aw["h"], page_h, scale)
 
     # Terms sentence should sit just above "Escrow Holder is advised by".
     if advised:
@@ -337,7 +347,8 @@ def decide_overlay(data: FillData):
     to_write = {
         "checkbox_deposit": "X",
         "checkbox_dfpi": "X",
-        "counter_offer_numbers": FIXED["counter_offer_numbers"],
+        # counter_offer_numbers: user input takes priority; fall back to env var default
+        "counter_offer_numbers": data.counter_offer_numbers or FIXED["counter_offer_numbers"],
         "escrow_company": FIXED["escrow_company"],
         "by_name": FIXED["by_name"],
         "address": FIXED["address"],
@@ -348,6 +359,8 @@ def decide_overlay(data: FillData):
     }
     if not is_vickie:
         to_write["subject_terms"] = subject_line
+    if data.buyer_counter_offer:
+        to_write["buyer_counter_offer"] = data.buyer_counter_offer
     left_blank = []
 
     variable_map = {
@@ -460,6 +473,8 @@ def main():
     ap.add_argument("--acceptance-date")
     ap.add_argument("--second-date", help="Date next to escrow officer signature; defaults to today PST")
     ap.add_argument("--escrow-instruction-date", help="Date on Culture Escrow escrow instruction (manual)")
+    ap.add_argument("--counter-offer-numbers", help="Seller counter offer (e.g. 'one')")
+    ap.add_argument("--buyer-counter-offer", help="Buyer counter offer (e.g. 'one to three')")
     ap.add_argument("--no-anchor-mode", action="store_true")
     args = ap.parse_args()
 
@@ -472,6 +487,8 @@ def main():
         acceptance_date=args.acceptance_date,
         second_date=args.second_date,
         escrow_instruction_date=args.escrow_instruction_date,
+        counter_offer_numbers=args.counter_offer_numbers,
+        buyer_counter_offer=args.buyer_counter_offer,
     )
 
     filled_fields, left_blank, anchor_debug, used_coords = fill_pdf(

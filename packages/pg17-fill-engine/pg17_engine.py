@@ -51,6 +51,8 @@ def fill_page17(
     acceptance_date: str = '',
     second_date: str = '',              # auto-filled with today PST if empty
     escrow_instruction_date: str = '',  # manual — date on escrow instruction
+    counter_offer_numbers: str = '',    # seller counter offer (user input)
+    buyer_counter_offer: str = '',      # buyer counter offer (new field)
     by_name: str = '',
     address: str = '',
     phone: str = '',
@@ -84,6 +86,10 @@ def fill_page17(
         cmd += ['--second-date', second_date]
     if escrow_instruction_date:
         cmd += ['--escrow-instruction-date', escrow_instruction_date]
+    if counter_offer_numbers:
+        cmd += ['--counter-offer-numbers', counter_offer_numbers]
+    if buyer_counter_offer:
+        cmd += ['--buyer-counter-offer', buyer_counter_offer]
 
     # 将 officer/branch 信息通过 env override 注入子进程
     # 引擎脚本直接从环境变量读取这些值，无需修改引擎脚本
