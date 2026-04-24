@@ -255,20 +255,18 @@
         <input type="hidden" name="address" id="field-address">
         <input type="hidden" name="phone" id="field-phone">
 
-        <!-- 5 fields in responsive grid -->
-        <div class="grid" style="margin-top: 16px;">
+        <!-- Fields: 2-column grid, explicit row order -->
+        <div class="grid" style="margin-top:16px;grid-template-columns:repeat(2,1fr);">
+          <!-- Row 1: Deposit Amount | Escrow Number -->
           <div>
             <label>Deposit Amount</label>
             <input name="deposit_amount" placeholder="ex: 500,000.00">
           </div>
           <div>
-            <label>Advised by</label>
-            <input name="seller_agent_name" id="field-seller-agent" placeholder="ex: Seller Agent Name or other">
-          </div>
-          <div>
             <label>Escrow Number</label>
             <input name="escrow_number" placeholder="ex: 024000-XX">
           </div>
+          <!-- Row 2: Seller Counter Offer | Buyer Counter Offer -->
           <div>
             <label>Seller Counter Offer</label>
             <input name="counter_offer_numbers" placeholder="ex: Seller Counter Offer One to Three">
@@ -277,6 +275,13 @@
             <label>Buyer Counter Offer</label>
             <input name="buyer_counter_offer" placeholder="ex: Buyer Counter Offer One to Ten">
           </div>
+          <!-- Row 3: Advised by -->
+          <div>
+            <label>Advised by</label>
+            <input name="seller_agent_name" id="field-seller-agent" placeholder="ex: Seller Agent Name or other">
+          </div>
+          <div></div>
+          <!-- Row 4: Acceptance Date | Escrow Instruction Date -->
           <div>
             <label>Acceptance Date</label>
             <input name="acceptance_date" placeholder="ex: 04/21/2026">
@@ -310,6 +315,12 @@
         <li>When done, click <strong>Download</strong> to save the completed PDF.</li>
         <li>Dates must be in <strong>MM/DD/YYYY</strong> format (ex: 03/20/2026).</li>
       </ol>
+
+      <div style="margin-top:24px;">
+        <h3 style="margin:0 0 12px;font-size:15px;font-weight:600;">Example of pg 17 of RPA</h3>
+        <img src="assets/rpa-pg17-example.png" alt="Example of pg 17 of RPA"
+             style="width:100%;max-width:720px;border:1px solid #ddd;border-radius:6px;display:block;" />
+      </div>
     </div>
 
   </div>
