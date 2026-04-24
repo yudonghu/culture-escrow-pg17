@@ -262,8 +262,8 @@
             <input name="deposit_amount" placeholder="ex: 500,000.00">
           </div>
           <div>
-            <label>Seller Agent Name</label>
-            <input name="seller_agent_name" placeholder="ex: Jason Hu">
+            <label>Advised by</label>
+            <input name="seller_agent_name" id="field-seller-agent" placeholder="ex: Seller Agent Name or other">
           </div>
           <div>
             <label>Escrow Number</label>
@@ -346,7 +346,14 @@
       branchInfo.classList.add('visible');
     }
 
-    // 选 Officer → Branch 自动切换 + 地址/电话填充
+    const fieldSellerAgent = document.getElementById('field-seller-agent');
+
+    // Officers that auto-fill the "advised by" seller agent field
+    const OFFICER_SELLER_AGENT = {
+      'Vickie Hua': 'Vickie Hua',
+    };
+
+    // 选 Officer → Branch 自动切换 + 地址/电话填充 + seller agent 自动填充
     officerSel.addEventListener('change', () => {
       const officer = officerSel.value;
       fieldByName.value = officer;
@@ -358,6 +365,10 @@
         branchInfo.classList.remove('visible');
         fieldAddress.value = '';
         fieldPhone.value = '';
+      }
+      // Auto-fill seller agent when officer has a defined mapping; clear otherwise
+      if (fieldSellerAgent) {
+        fieldSellerAgent.value = OFFICER_SELLER_AGENT[officer] || '';
       }
     });
 
