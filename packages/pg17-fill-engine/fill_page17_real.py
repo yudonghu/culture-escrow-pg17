@@ -84,7 +84,7 @@ FALLBACK_COORDS: Dict[str, Tuple[float, float]] = {
 # Fine-tune offsets (points) after anchor placement.
 FIELD_OFFSETS: Dict[str, Tuple[float, float]] = {
     "checkbox_deposit": (-12, -6),
-    "checkbox_dfpi": (-6, -6),
+    "checkbox_dfpi": (6, -6),   # shifted right ~12pt so X lands inside the checkbox square
     "deposit_amount": (19, -6),
     "counter_offer_numbers": (25, -3),
     "seller_agent": (48, -4),
@@ -331,19 +331,23 @@ def decide_overlay(data: FillData):
     instruction_date = data.escrow_instruction_date or ""
     subject_line = f"subject to terms and conditions shown on Culture Escrow's escrow instruction dated {instruction_date}"
 
+    # Vickie Hua does not use the escrow instruction subject line
+    is_vickie = "vickie" in FIXED["by_name"].lower()
+
     to_write = {
         "checkbox_deposit": "X",
         "checkbox_dfpi": "X",
         "counter_offer_numbers": FIXED["counter_offer_numbers"],
         "escrow_company": FIXED["escrow_company"],
         "by_name": FIXED["by_name"],
-        "subject_terms": subject_line,
         "address": FIXED["address"],
         "phone": FIXED["phone"],
         "license": FIXED["license"],
         # second_date always written: use provided value or today PST
         "second_date": data.second_date or today_pst,
     }
+    if not is_vickie:
+        to_write["subject_terms"] = subject_line
     left_blank = []
 
     variable_map = {
